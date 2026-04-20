@@ -1,4 +1,4 @@
-# @derin/design-memory
+# Design Memory
 
 Design Memory blocks net-new design policy violations and reference mismatches in React/Tailwind PRs with deterministic checks first.
 
