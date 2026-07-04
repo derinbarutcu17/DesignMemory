@@ -1,5 +1,7 @@
 # Design Memory
 
+[![CI](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml/badge.svg)](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml)
+
 Design Memory blocks net-new design policy violations and reference mismatches in React/Tailwind PRs with deterministic checks first.
 
 This repo is currently documented as a local-first CLI tool. It is not published to npm yet, so the primary install path is local development plus `npm link`.
@@ -291,6 +293,8 @@ That is the escape hatch for false positives or urgent work.
 
 ## Verification
 
+### Local
+
 Run inside this repository:
 
 ```bash
@@ -299,3 +303,7 @@ npm test
 npm run lint
 npm pack --dry-run
 ```
+
+### CI
+
+Every push and pull request is automatically checked by [GitHub Actions](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml) with TypeScript type-checking, ESLint, and the full test suite across Node 18, 20, and 22.
