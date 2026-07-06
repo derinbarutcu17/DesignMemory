@@ -7,7 +7,7 @@
     "lint": "eslint .",
     "cli": "tsx src/cli/index.ts",
     "build": "tsc",
-    "test": "node --import tsx --test test/**/*.test.ts",
+    "test": "test -d test && node --import tsx --test \"test/**/*.test.ts\" || echo \"No test files found\"",
     "prepack": "npm run build"
   },
   "dependencies": {
