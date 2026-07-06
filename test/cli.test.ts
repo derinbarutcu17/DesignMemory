@@ -11,7 +11,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 
 test('cli init supports --cwd', () => {
   const cwd = makeRepoRoot();
-  execFileSync('node', ['dist/cli/index.js', 'init', '--cwd', cwd], {
+  execFileSync('npx', ['tsx', 'src/cli/index.ts', 'init', '--cwd', cwd], {
     cwd: repoRoot,
     stdio: 'ignore',
   });
@@ -48,7 +48,7 @@ test('cli compare supports --cwd', () => {
     }),
   );
 
-  const output = execFileSync('node', ['dist/cli/index.js', 'compare', '--cwd', cwd, '--json'], {
+  const output = execFileSync('npx', ['tsx', 'src/cli/index.ts', 'compare', '--cwd', cwd, '--json'], {
     cwd: repoRoot,
     encoding: 'utf-8',
   });
