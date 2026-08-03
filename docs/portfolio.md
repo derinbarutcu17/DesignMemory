@@ -22,7 +22,7 @@ Design Memory is a deterministic gate between a design system and the AI agents 
 
 - Repo: https://github.com/derinbarutcu17/DesignMemory
 - Live demo PR: https://github.com/derinbarutcu17/design-memory-demo/pull/1
-- npm: https://www.npmjs.com/package/@derin/design-memory
+- npm: `@derin/design-memory` — package name reserved, publish pending (needs `npm login`)
 
 ## Later (not now)
 
