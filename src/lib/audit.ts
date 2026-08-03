@@ -793,11 +793,14 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
   saveAuditRun(run, cwd);
 
   if (options.createBaseline) {
+    const accepted = issues.filter((issue) => issue.status === 'new' || issue.status === 'remaining').length;
     createBaseline(issues.map((issue) => issue.fingerprint), cwd);
+    run.baselineCreated = true;
     if (options.json) {
       console.log(prettyJson(run));
     } else {
       printHumanReport(run, true);
+      console.log(`[Design Memory] Baseline accepted ${accepted} findings. Future runs block only net-new or reopened drift.`);
     }
     exit(0);
     return;

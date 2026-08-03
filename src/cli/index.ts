@@ -4,6 +4,7 @@ import { compareRuns, loadLatestRunJson, reviewFinding, runAudit, scanPullReques
 import { syncReference } from '../lib/reference';
 import { installHook } from './install';
 import { ghostConfig } from './ghost';
+import { loadReviews } from '../lib/state';
 import { prettyJson } from '../lib/utils';
 
 export const program = new Command();
@@ -99,8 +100,9 @@ export const reviewCommand = program
   .option('--fingerprint <value>', 'Finding fingerprint to review')
   .option('--status <value>', 'Review status: intentional or ignore')
   .option('--note <value>', 'Optional note for the review decision')
+  .option('--export', 'Export the review ledger as a markdown report')
   .option('--json', 'Print machine-readable JSON output')
-  .action(async ({ cwd, fingerprint, status, note, json }: { cwd?: string; fingerprint?: string; status?: 'intentional' | 'ignore'; note?: string; json?: boolean }) => {
+  .action(async ({ cwd, fingerprint, status, note, export: exportLedger, json }: { cwd?: string; fingerprint?: string; status?: 'intentional' | 'ignore'; note?: string; export?: boolean; json?: boolean }) => {
     try {
       if (fingerprint && status) {
         const review = reviewFinding(fingerprint, status, note, resolveCwd(cwd));
@@ -108,7 +110,29 @@ export const reviewCommand = program
         return;
       }
 
-      const latest = loadLatestRunJson(resolveCwd(cwd));
+      const targetCwd = resolveCwd(cwd);
+      if (exportLedger) {
+        const reviews = loadReviews(targetCwd);
+        const latest = loadLatestRunJson(targetCwd);
+        const issueByFingerprint = new Map(latest.issues.map((issue) => [issue.fingerprint, issue]));
+        const rows = Object.entries(reviews.reviews).map(([fingerprint, review]) => {
+          const issue = issueByFingerprint.get(fingerprint);
+          const location = issue ? `${issue.filePath}${issue.line ? `:${issue.line}` : ''}` : 'not in latest run';
+          const rule = issue?.ruleId ?? '-';
+          return `| ${fingerprint} | ${rule} | ${location} | ${review.status} | ${(review.note ?? '').replace(/\|/g, '\\|')} | ${review.updatedAt} |`;
+        });
+        console.log(`# Design Memory Review Ledger
+
+Decisions stored: ${rows.length}. An \`intentional\` review keeps the finding out of future blocking runs.
+
+| Fingerprint | Rule | File:Line | Status | Note | Updated |
+| --- | --- | --- | --- | --- | --- |
+${rows.join('\n')}
+`);
+        return;
+      }
+
+      const latest = loadLatestRunJson(targetCwd);
       console.log(json ? prettyJson(latest.issues) : latest.issues.map((issue) => `${issue.fingerprint} ${issue.status} ${issue.filePath} ${issue.ruleId}`).join('\n'));
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error));
@@ -124,7 +148,15 @@ export const compareCommand = program
   .action(async ({ cwd, json }: { cwd?: string; json?: boolean }) => {
     try {
       const comparison = compareRuns(resolveCwd(cwd));
-      console.log(json ? prettyJson(comparison) : prettyJson(comparison));
+      if (json) {
+        console.log(prettyJson(comparison));
+      } else {
+        console.log('[Design Memory] Run comparison:');
+        console.log(`  Resolved: ${comparison.resolvedFingerprints.length}`);
+        console.log(`  Remaining: ${comparison.remainingFingerprints.length}`);
+        console.log(`  New: ${comparison.newFingerprints.length}`);
+        console.log(`  Reopened: ${comparison.reopenedFingerprints.length}`);
+      }
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error));
       process.exit(1);

@@ -89,6 +89,7 @@ export type AuditRun = {
   }>;
   issues: DriftIssue[];
   warnings?: string[];
+  baselineCreated?: boolean;
   comparison?: {
     resolvedFingerprints: string[];
     remainingFingerprints: string[];
