@@ -68,7 +68,7 @@ function getPullRequestHeadRef(prNumber: number, repoRef: string, cwd: string) {
 
 function getPullRequestFileContent(headRef: string, repoRef: string, filePath: string, cwd: string) {
   try {
-    return gh(['api', `repos/${repoRef}/contents/${encodeGitHubContentPath(filePath)}`, '-f', `ref=${headRef}`, '--jq', '.content'], cwd)
+    return gh(['api', `repos/${repoRef}/contents/${encodeGitHubContentPath(filePath)}?ref=${headRef}`, '--jq', '.content'], cwd)
       .replace(/\n/g, '')
       .trim();
   } catch {
