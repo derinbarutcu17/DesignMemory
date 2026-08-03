@@ -1,33 +1,90 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
-export async function ghostConfig(cwd = process.cwd()) {
-  const rulesFiles = [
-    path.join(cwd, '.cursorrules'),
-    path.join(cwd, '.windsurfrules'),
-    path.join(cwd, '.github', 'copilot-instructions.md'),
+import { loadReferenceSnapshot } from '../lib/state';
+import { generateAgentPack, SECTION_END, SECTION_START } from '../lib/ghost/generate';
+
+type GhostOptions = {
+  cwd?: string;
+  write?: boolean;
+  format?: 'design-md';
+};
+
+function wrapSection(content: string) {
+  return `${SECTION_START}\n${content}\n${SECTION_END}`;
+}
+
+function writeSectionFile(filePath: string, content: string) {
+  const section = wrapSection(content);
+  if (!fs.existsSync(filePath)) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `${section}\n`);
+    return 'created';
+  }
+
+  const existing = fs.readFileSync(filePath, 'utf-8');
+  if (existing.includes(SECTION_START)) {
+    const updated = existing.replace(
+      new RegExp(`${SECTION_START}[\\s\\S]*?${SECTION_END}`),
+      section,
+    );
+    fs.writeFileSync(filePath, updated);
+    return 'updated';
+  }
+
+  fs.writeFileSync(filePath, `${existing.replace(/\s*$/, '')}\n\n${section}\n`);
+  return 'updated';
+}
+
+export async function ghostConfig(cwd = process.cwd(), options: GhostOptions = {}) {
+  const snapshot = loadReferenceSnapshot(cwd);
+  if (!snapshot) {
+    throw new Error('No reference snapshot found. Run `design-memory sync-reference` first.');
+  }
+
+  const pack = generateAgentPack(snapshot);
+
+  if (options.format === 'design-md') {
+    if (options.write) {
+      fs.writeFileSync(path.join(cwd, 'DESIGN.md'), pack['DESIGN.md']);
+      console.log('[Design Memory] Wrote DESIGN.md.');
+    } else {
+      console.log(pack['DESIGN.md']);
+    }
+    return { dryRun: !options.write, targets: ['DESIGN.md'] };
+  }
+
+  const existingCursorRules = fs.existsSync(path.join(cwd, '.cursorrules'));
+  const plan = [
+    ...Object.entries(pack)
+      .filter(([target]) => target !== 'DESIGN.md' && target !== '.cursorrules')
+      .map(([target]) => ({
+        target,
+        status: fs.existsSync(path.join(cwd, target)) ? 'would update' : 'would create',
+      })),
   ];
+  if (existingCursorRules) {
+    plan.push({ target: '.cursorrules', status: 'would update' });
+  }
 
-  const injection = `\nDESIGN MEMORY RULE: Before generating or modifying audited UI code, cross-reference the components with the repository design reference. Avoid raw hex colors, arbitrary Tailwind values, and inline styles that bypass the design system.\n`;
+  if (!options.write) {
+    console.log('[Design Memory] Ghost plan (dry run, use --write to apply):');
+    for (const entry of plan) {
+      console.log(`  ${entry.status} ${entry.target}`);
+    }
+    return { dryRun: true, targets: [...plan.map((entry) => entry.target), 'DESIGN.md'] };
+  }
 
-  let updated = false;
-  for (const file of rulesFiles) {
-    if (fs.existsSync(file)) {
-      const content = fs.readFileSync(file, 'utf-8');
-      if (!content.includes('DESIGN MEMORY RULE:')) {
-        fs.appendFileSync(file, injection);
-        console.log(`[Design Memory] Ghost injection applied to ${path.basename(file)}.`);
-        updated = true;
-      } else {
-        console.log(`[Design Memory] Ghost injection already present in ${path.basename(file)}.`);
-        updated = true;
-      }
+  const writeTargets = [...plan.map((entry) => entry.target), 'DESIGN.md'];
+  for (const target of writeTargets) {
+    const targetPath = path.join(cwd, target);
+    if (target === '.clinerules' || target === 'CLAUDE.md' || target === 'AGENTS.md' || target === '.github/copilot-instructions.md') {
+      console.log(`[Design Memory] ${writeSectionFile(targetPath, pack[target])} ${target}`);
+    } else {
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      fs.writeFileSync(targetPath, pack[target]);
+      console.log(`[Design Memory] wrote ${target}`);
     }
   }
-
-  if (!updated) {
-    // If no files found, create .cursorrules by default
-    fs.writeFileSync(path.join(cwd, '.cursorrules'), injection);
-    console.log('[Design Memory] Created .cursorrules with ghost injection.');
-  }
+  return { dryRun: false, targets: writeTargets };
 }

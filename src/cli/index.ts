@@ -64,11 +64,13 @@ export const syncReferenceCommand = program
 
 export const ghostCommand = program
   .command('ghost')
-  .description('Optional helper: inject Design Memory guidance into IDE rules files')
+  .description('Generate the agent design pack (rules files, DESIGN.md, token reference) from the snapshot')
   .option('--cwd <path>', 'Repository path to update')
-  .action(async ({ cwd }: { cwd?: string }) => {
+  .option('--write', 'Write targets (default is a dry-run plan)')
+  .option('--format <format>', 'Generate only a single artifact: design-md')
+  .action(async ({ cwd, write, format }: { cwd?: string; write?: boolean; format?: 'design-md' }) => {
     try {
-      await ghostConfig(resolveCwd(cwd));
+      await ghostConfig(resolveCwd(cwd), { write, format });
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error));
       process.exit(1);
