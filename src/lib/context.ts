@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { readConfig } from './config';
-import type { ReferenceSnapshot } from './types';
+import type { ComponentReference, ReferenceSnapshot } from './types';
 import { normalizeDesignMarkdownWithOptions } from './design-md/normalize';
+import { aliasMapFromDtcg, parseDtcgTokens } from './dtcg/parse';
 import { syncReferenceSnapshotFromFigma } from './figma/normalize-reference';
 import { normalizeStitchReference } from './stitch/normalize';
 
@@ -68,6 +69,48 @@ export async function resolveReferenceSnapshot(cwd = process.cwd()): Promise<Ref
       throw new Error('FIGMA_ACCESS_TOKEN is missing. Set it before running sync-reference for a Figma source.');
     }
     return syncReferenceSnapshotFromFigma(figmaFileKey);
+  }
+
+  if (config.reference.sourceType === 'dtcg') {
+    const dtcgPath = config.reference.path || './tokens.json';
+    const resolvedDtcgPath = path.resolve(cwd, dtcgPath);
+    if (!fs.existsSync(resolvedDtcgPath)) {
+      throw new Error(`No DTCG token file found at ${dtcgPath}. Update design-memory.config.json or add tokens.json.`);
+    }
+
+    const raw = JSON.parse(fs.readFileSync(resolvedDtcgPath, 'utf-8'));
+    const tokens = parseDtcgTokens(raw, { fileName: path.basename(resolvedDtcgPath) });
+
+    let components: ComponentReference[] = [];
+    let source = 'dtcg';
+    const designMdPath = config.reference.designMdPath;
+    if (designMdPath) {
+      const resolvedMdPath = path.resolve(cwd, designMdPath);
+      if (fs.existsSync(resolvedMdPath)) {
+        const markdownSnapshot = normalizeDesignMarkdownWithOptions(
+          fs.readFileSync(resolvedMdPath, 'utf-8'),
+          path.basename(resolvedMdPath),
+        );
+        components = markdownSnapshot.components;
+        source = 'dtcg+design-md';
+      }
+    }
+
+    return {
+      metadata: {
+        source,
+        versionLabel: path.basename(resolvedDtcgPath),
+        importedAt: new Date().toISOString(),
+        fileName: path.basename(resolvedDtcgPath),
+        tokenCount: tokens.length,
+        componentCount: components.length,
+        variantCount: components.reduce((count, component) => count + (component.variants?.length ?? 0), 0),
+        stateCount: components.reduce((count, component) => count + (component.states?.length ?? 0), 0),
+      },
+      tokens,
+      components,
+      aliasMap: aliasMapFromDtcg(tokens),
+    } satisfies ReferenceSnapshot;
   }
 
   const referencePath = config.reference.sourceType === 'stitch-markdown'

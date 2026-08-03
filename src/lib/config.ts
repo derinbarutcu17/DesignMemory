@@ -9,8 +9,9 @@ export const designMemoryConfigSchema = z.object({
   strictness: z.enum(['warn', 'block']).default('block'),
   stateDir: z.string().default('.design-memory'),
   reference: z.object({
-    sourceType: z.enum(['design-md', 'stitch-markdown', 'figma']).default('design-md'),
+    sourceType: z.enum(['design-md', 'stitch-markdown', 'figma', 'dtcg']).default('design-md'),
     path: z.string().default('./DESIGN.md'),
+    designMdPath: z.string().optional(),
     figmaFileKey: z.string().optional(),
     figmaUrl: z.string().optional(),
     stitchPath: z.string().optional(),
@@ -77,6 +78,7 @@ export const DEFAULT_CONFIG: DesignMemoryConfig = {
   reference: {
     sourceType: 'design-md',
     path: './DESIGN.md',
+    designMdPath: '',
     figmaFileKey: '',
     figmaUrl: '',
     stitchPath: '',

@@ -2,8 +2,9 @@
   "strictness": "block",
   "stateDir": ".design-memory",
   "reference": {
-    "sourceType": "design-md",
-    "path": "./DESIGN.md",
+    "sourceType": "dtcg",
+    "path": "./tokens.json",
+    "designMdPath": "./DESIGN.md",
     "figmaFileKey": "",
     "figmaUrl": "",
     "stitchPath": "",
