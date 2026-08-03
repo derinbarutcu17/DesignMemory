@@ -87,8 +87,8 @@ function toIssueType(ruleId: RuleId): DriftIssue['issueType'] {
   return 'hardcoded-style';
 }
 
-function getIssueKey(issue: Pick<DriftIssue, 'ruleId' | 'componentName' | 'filePath' | 'expected'>) {
-  return `${normalizeForMatch(issue.componentName)}::${issue.ruleId}::${issue.filePath}::${normalizeForMatch(issue.expected)}`;
+function getIssueKey(issue: Pick<DriftIssue, 'ruleId' | 'componentName' | 'filePath' | 'expected' | 'found'>) {
+  return `${normalizeForMatch(issue.componentName)}::${issue.ruleId}::${issue.filePath}::${normalizeForMatch(issue.expected)}::${normalizeForMatch(issue.found)}`;
 }
 
 function parseDiffIntoFiles(diff: string, config: DesignMemoryConfig, cwd = process.cwd()): FileDiff[] {

@@ -47,6 +47,32 @@ Must use: `bg-primary`, `px-4`, `py-2`
 
 Disallowed: `style={{`
 
-States: hover
+States: hover, disabled
 
 Variants: primary, secondary
+
+### Input
+
+Text input with label. Focus state must be explicit.
+
+Must use: `bg-surface`, `rounded-lg`, `border`, `px-3`
+
+Disallowed: `style={{`
+
+States: focus, disabled
+
+### Card
+
+Surface container for grouped content.
+
+Must use: `bg-surface`, `rounded-lg`, `p-4`, `shadow-sm`
+
+Disallowed: `style={{`
+
+### Badge
+
+Small status label.
+
+Must use: `rounded-full`, `text-sm`, `px-3`, `py-1`
+
+Disallowed: `./legacy/`
