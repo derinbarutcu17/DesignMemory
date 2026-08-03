@@ -1,4 +1,5 @@
 import type { ComponentReference, ReferenceSnapshot, ReferenceToken } from '../types';
+import { codeHintsFor } from '../dtcg/parse';
 import { generateNameCandidates, toKebabCase, uniqueStrings } from '../utils';
 
 const GENERIC_HEADINGS = new Set([
@@ -12,7 +13,32 @@ const GENERIC_HEADINGS = new Set([
   'spacing',
   'elevation',
   'tokens',
+  'visual theme & atmosphere',
+  'visual theme and atmosphere',
+  'color palette & roles',
+  'color palette and roles',
+  'typography rules',
+  'spacing',
+  'shape & radius',
+  'shape and radius',
+  'component stylings',
+  'components',
+  'layout principles',
 ]);
+
+const TOKEN_TABLE_HEADERS = new Set(['token', 'class', 'value', 'name', 'variable', 'css']);
+
+function stripNumberedPrefix(heading: string) {
+  return heading.replace(/^\d+[.)]\s*/, '').trim();
+}
+
+function isTokenTableRow(cells: string[]) {
+  if (cells.length < 2) {
+    return false;
+  }
+  const name = cells[0].trim().replace(/`/g, '');
+  return !TOKEN_TABLE_HEADERS.has(name.toLowerCase()) && /^-{0,2}[a-z0-9.-]+$/i.test(name);
+}
 
 const STATE_WORDS = ['hover', 'focus', 'disabled', 'active', 'pressed', 'selected', 'loading', 'error'];
 const VARIANT_WORDS = ['primary', 'secondary', 'ghost', 'outline', 'destructive', 'success', 'warning', 'danger', 'default'];
@@ -136,17 +162,89 @@ function extractPatternLines(lines: string[], mode: 'required' | 'disallowed', s
   ]);
 }
 
+function extractTableTokens(markdown: string): ReferenceToken[] {
+  const tokens: ReferenceToken[] = [];
+  const tableRe = /^\|(.+)\|$/gm;
+
+  for (const match of markdown.matchAll(tableRe)) {
+    const cells = match[1]
+      .split('|')
+      .map((cell) => cell.trim().replace(/`/g, ''))
+      .filter((cell) => cell.length > 0 && !/^:?-{2,}:?$/.test(cell));
+
+    if (!isTokenTableRow(cells)) {
+      continue;
+    }
+
+    const name = cells[0];
+    const value = cells[cells.length - 1];
+    const kind = name.split('.')[0];
+    const codeClass = cells.length >= 3 ? cells[1] : undefined;
+    const token: ReferenceToken = {
+      name,
+      kind,
+      value,
+      codeHints: uniqueStrings([...(codeHintsFor(kind, name) ?? []), codeClass]),
+      aliases: codeClass ? [codeClass] : undefined,
+      sourceType: 'design-md',
+    };
+    if (token.codeHints?.length === 0) {
+      delete token.codeHints;
+    }
+    if (!token.aliases?.length) {
+      delete token.aliases;
+    }
+    tokens.push(token);
+  }
+
+  return tokens;
+}
+
+function extractComponentBullets(section: Section): ComponentReference[] {
+  const components: ComponentReference[] = [];
+  for (const rawLine of section.lines) {
+    const match = rawLine.match(/^[-*]\s*\*\*([^*]+)\*\*:?\s*(.*)$/);
+    if (!match) {
+      continue;
+    }
+    const name = match[1].trim().replace(/:$/, '');
+    if (!name) {
+      continue;
+    }
+    const description = match[2].trim();
+    const inlineCodes = uniqueStrings(Array.from(description.matchAll(/`([^`]+)`/g)).map((entry) => entry[1].trim()));
+    components.push({
+      name,
+      codeMatches: generateNameCandidates(name),
+      aliases: generateNameCandidates(name),
+      summary: description || `Derived from ${name} in DESIGN.md.`,
+      tokensUsed: inlineCodes.length ? inlineCodes.map((code) => `hint.${toKebabCase(code)}`) : undefined,
+    } satisfies ComponentReference);
+  }
+  return components;
+}
+
 function extractComponentReferences(markdown: string, strict = false): ComponentReference[] {
   const sections = toSections(markdown);
   const references = sections
-    .filter((section) => !GENERIC_HEADINGS.has(section.heading.toLowerCase()))
-    .map((section) => {
+    .flatMap((section) => {
+      const normalizedHeading = stripNumberedPrefix(section.heading.toLowerCase());
+      if (normalizedHeading === 'components' || normalizedHeading === 'component stylings') {
+        const bullets = extractComponentBullets(section);
+        if (bullets.length > 0) {
+          return bullets;
+        }
+      }
+      if (GENERIC_HEADINGS.has(normalizedHeading)) {
+        return [];
+      }
+
       const inlineCodes = extractInlineCodes(section.lines);
       const requiredPatterns = extractPatternLines(section.lines, 'required', strict);
       const disallowedPatterns = extractPatternLines(section.lines, 'disallowed', strict);
       const tokensUsed = inlineCodes.filter((code) => /(bg-|text-|border-|ring-|rounded-|shadow-)/.test(code));
 
-      return {
+      return [{
         name: section.heading,
         codeMatches: generateNameCandidates(section.heading),
         aliases: generateNameCandidates(section.heading),
@@ -156,7 +254,7 @@ function extractComponentReferences(markdown: string, strict = false): Component
         variants: extractVariants(section.lines),
         states: extractStates(section.lines),
         tokensUsed: tokensUsed.length ? tokensUsed.map((token) => `hint.${toKebabCase(token)}`) : undefined,
-      } satisfies ComponentReference;
+      } satisfies ComponentReference];
     });
 
   if (references.length > 0) {
@@ -174,9 +272,10 @@ function extractComponentReferences(markdown: string, strict = false): Component
 }
 
 export function normalizeDesignMarkdown(markdown: string, fileName = 'DESIGN.md'): ReferenceSnapshot {
-  const hexTokens = extractHexTokens(markdown);
+  const tableTokens = extractTableTokens(markdown);
+  const hexTokens = extractHexTokens(markdown).filter((token) => !tableTokens.some((entry) => entry.value === token.value));
   const codeTokens = extractCodeTokens(markdown);
-  const allTokens = [...hexTokens, ...codeTokens];
+  const allTokens = [...tableTokens, ...hexTokens, ...codeTokens];
   const components = extractComponentReferences(markdown);
 
   return buildDesignSnapshot(allTokens, components, fileName);
@@ -187,9 +286,10 @@ export function normalizeDesignMarkdownWithOptions(
   fileName = 'DESIGN.md',
   options: NormalizeDesignMarkdownOptions = {},
 ): ReferenceSnapshot {
-  const hexTokens = extractHexTokens(markdown);
+  const tableTokens = extractTableTokens(markdown);
+  const hexTokens = extractHexTokens(markdown).filter((token) => !tableTokens.some((entry) => entry.value === token.value));
   const codeTokens = extractCodeTokens(markdown);
-  const allTokens = [...hexTokens, ...codeTokens];
+  const allTokens = [...tableTokens, ...hexTokens, ...codeTokens];
   const components = extractComponentReferences(markdown, options.strict ?? false);
 
   return buildDesignSnapshot(allTokens, components, fileName);

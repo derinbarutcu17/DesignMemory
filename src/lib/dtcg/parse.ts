@@ -40,6 +40,11 @@ const CODE_HINT_KINDS: Record<string, (name: string) => string[]> = {
   fontSize: (name) => [`text-${name}`],
 };
 
+export function codeHintsFor(kind: string, dotName: string): string[] | undefined {
+  const factory = CODE_HINT_KINDS[kind];
+  return factory ? factory(hintNameFor(dotName.split('.'))) : undefined;
+}
+
 function isDtcgLeaf(value: unknown): value is DtcgLeaf {
   return typeof value === 'object' && value !== null && '$value' in (value as Record<string, unknown>);
 }
@@ -109,9 +114,8 @@ export function parseDtcgTokens(json: unknown, options: ParseDtcgOptions = {}): 
           aliasMap.set(token.name, [ref]);
         }
 
-        const hintFactory = CODE_HINT_KINDS[token.kind ?? ''];
-        if (hintFactory) {
-          token.codeHints = hintFactory(hintNameFor(fullPath));
+        if (token.kind && CODE_HINT_KINDS[token.kind]) {
+          token.codeHints = codeHintsFor(token.kind, token.name);
         }
 
         tokens.push(token);
