@@ -16,7 +16,7 @@ function resolveCwd(cwd?: string) {
 program
   .name('design-memory')
   .description('Blocks net-new design policy violations and reference mismatches in React/Tailwind PRs with deterministic checks first.')
-  .version('0.1.0');
+  .version('0.3.0');
 
 export const auditCommand = program
   .command('audit')

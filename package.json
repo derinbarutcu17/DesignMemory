@@ -1,7 +1,7 @@
 {
   "name": "@derin/design-memory",
-  "version": "0.1.0",
-  "description": "Blocks net-new design policy violations and reference mismatches in React/Tailwind PRs with deterministic checks first.",
+  "version": "0.3.0",
+  "description": "Blocks net-new design drift in AI-written React/Tailwind code. Deterministic, local-first, DTCG-native.",
   "private": false,
   "repository": {
     "type": "git",

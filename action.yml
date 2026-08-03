@@ -1,7 +1,8 @@
 name: Design Memory
 description: >-
   Blocks net-new design drift in React/Tailwind PRs using deterministic checks
-  against the repository design reference (DESIGN.md or Stitch/Figma snapshot).
+  against the repository design reference (DESIGN.md, DTCG tokens.json, or
+  Stitch/Figma snapshot).
 inputs:
   strictness:
     description: >-
@@ -11,17 +12,28 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Build Design Memory CLI
+    - name: Install Design Memory CLI
       shell: bash
       run: |
-        npm ci --prefix "${{ github.action_path }}" --no-audit --no-fund
-        npm run build --prefix "${{ github.action_path }}"
+        # Fast path: published npm package. Fallback (e.g. pre-release
+        # snapshots): build from source so @main always works.
+        if npm install -g @derin/design-memory --no-audit --no-fund 2>/dev/null && command -v design-memory; then
+          echo "design-memory installed from npm."
+        else
+          echo "npm package unavailable, building from source..."
+          npm ci --prefix "${{ github.action_path }}" --no-audit --no-fund
+          npm run build --prefix "${{ github.action_path }}"
+          mkdir -p "$RUNNER_TEMP/dm-bin"
+          printf '#!/usr/bin/env bash\nexec node "${{ github.action_path }}/dist/cli/index.js" "$@"\n' > "$RUNNER_TEMP/dm-bin/design-memory"
+          chmod +x "$RUNNER_TEMP/dm-bin/design-memory"
+          echo "$RUNNER_TEMP/dm-bin" >> "$GITHUB_PATH"
+        fi
 
     - name: Sync design reference
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
-      run: node "${{ github.action_path }}/dist/cli/index.js" sync-reference --cwd "$GITHUB_WORKSPACE"
+      run: design-memory sync-reference --cwd "$GITHUB_WORKSPACE"
 
     - name: Audit pull request
       if: github.event_name == 'pull_request'
@@ -29,7 +41,7 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        node "${{ github.action_path }}/dist/cli/index.js" scan --pr "${{ github.event.pull_request.number }}" --json --cwd "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/design-memory-run.json"
+        design-memory scan --pr "${{ github.event.pull_request.number }}" --json --cwd "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/design-memory-run.json"
 
     - name: Report findings
       if: always() && github.event_name == 'pull_request'
