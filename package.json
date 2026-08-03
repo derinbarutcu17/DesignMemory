@@ -1,5 +1,5 @@
 {
-  "name": "@derin/design-memory",
+  "name": "@derinb/design-memory",
   "version": "0.3.0",
   "description": "Blocks net-new design drift in AI-written React/Tailwind code. Deterministic, local-first, DTCG-native.",
   "private": false,

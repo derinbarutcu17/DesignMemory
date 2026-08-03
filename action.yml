@@ -17,7 +17,7 @@ runs:
       run: |
         # Fast path: published npm package. Fallback (e.g. pre-release
         # snapshots): build from source so @main always works.
-        if npm install -g @derin/design-memory --no-audit --no-fund 2>/dev/null && command -v design-memory; then
+        if npm install -g @derinb/design-memory --no-audit --no-fund 2>/dev/null && command -v design-memory; then
           echo "design-memory installed from npm."
         else
           echo "npm package unavailable, building from source..."

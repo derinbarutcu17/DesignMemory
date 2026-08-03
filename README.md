@@ -1,7 +1,7 @@
 # Design Memory
 
 [![CI](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml/badge.svg)](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@derin/design-memory)](https://www.npmjs.com/package/@derin/design-memory)
+[![npm version](https://img.shields.io/npm/v/@derinb/design-memory)](https://www.npmjs.com/package/@derinb/design-memory)
 
 **Design Memory blocks design drift in AI-written frontend code. Deterministic, local-first, DTCG-native.**
 
@@ -32,13 +32,13 @@ Figma ──export──> tokens.json (DTCG 2025.10) ──> DESIGN.md ──> @
 ## Quickstart (2 minutes)
 
 ```bash
-npx @derin/design-memory init            # 1. config + pre-commit hook
-npx @derin/design-memory sync-reference  # 2. snapshot DESIGN.md + tokens.json
+npx @derinb/design-memory init            # 1. config + pre-commit hook
+npx @derinb/design-memory sync-reference  # 2. snapshot DESIGN.md + tokens.json
 git add .
-npx @derin/design-memory audit           # 3. gate your staged changes
-npx @derin/design-memory ghost --write   # 4. generate agent rules files
-npx @derin/design-memory review          # 5. see the memory ledger
-npx @derin/design-memory compare         # 6. resolved vs remaining vs new vs reopened
+npx @derinb/design-memory audit           # 3. gate your staged changes
+npx @derinb/design-memory ghost --write   # 4. generate agent rules files
+npx @derinb/design-memory review          # 5. see the memory ledger
+npx @derinb/design-memory compare         # 6. resolved vs remaining vs new vs reopened
 ```
 
 ## Three enforcement surfaces
