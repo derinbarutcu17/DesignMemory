@@ -66,8 +66,9 @@ Showcase flows:
 
 ```bash
 npm run demo:design-memory:audit
-npm run demo:design-memory:web
 ```
+
+The `demo:design-memory:web` flow is retired; the audit demo runs the real engine against a throwaway repo.
 
 ## Editing Guidance
 

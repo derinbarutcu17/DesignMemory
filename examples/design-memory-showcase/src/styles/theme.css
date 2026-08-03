@@ -1,0 +1,9 @@
+/* Tailwind v4 theme tokens. Design Memory reads these to back arbitrary values. */
+@theme {
+  --color-primary: #2563eb;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --radius-lg: 8px;
+  --spacing-4: 16px;
+  --text-sm: 14px;
+}

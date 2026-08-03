@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { filterAuditableFiles, getStagedDiff, getStagedFileContent, isAuditableCodeFile } from './git';
+import { extractStyleUsages, scriptKindForFile, type StyleUsages } from './ast';
+import { isThemeBacked, loadThemeTokens, type ThemeTokens } from './theme';
 import { resolveReferenceSnapshot } from './context';
 import { detectAvailableBrain, promptBrain } from './engine';
 import { readConfig, type DesignMemoryConfig, type RuleId, type RuleSeverity } from './config';
@@ -34,6 +36,8 @@ type FileDiff = {
   filePath: string;
   diff: string;
   addedLines: string[];
+  addedLineNumbers: Set<number>;
+  hasHunks: boolean;
   fullContent?: string | null;
 };
 
@@ -55,6 +59,7 @@ type FileIssueContext = {
   defaultComponentName: string;
   rawText: string;
   fullText: string;
+  styleUsages: StyleUsages;
 };
 
 type IssueHistoryIndex = {
@@ -94,15 +99,42 @@ function parseDiffIntoFiles(diff: string, config: DesignMemoryConfig, cwd = proc
       const [header, ...rest] = block.split('\n');
       const filePath = header.trim();
       const body = rest.join('\n');
-      const addedLines = body
-        .split('\n')
-        .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
-        .map((line) => line.slice(1));
+      const addedLines: string[] = [];
+      const addedLineNumbers = new Set<number>();
+
+      // Track the new-file line counter through unified diff hunks so findings
+      // can be filtered to lines that actually changed in this diff.
+      let hasHunks = false;
+      let currentLine = 0;
+      for (const line of body.split('\n')) {
+        const hunkMatch = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+        if (hunkMatch) {
+          hasHunks = true;
+          currentLine = Number(hunkMatch[1]);
+          continue;
+        }
+        if (line.startsWith('+++') || line.startsWith('---')) {
+          continue;
+        }
+        if (line.startsWith('+')) {
+          addedLines.push(line.slice(1));
+          if (hasHunks) {
+            addedLineNumbers.add(currentLine);
+            currentLine += 1;
+          }
+        } else if (hasHunks && (line.startsWith(' ') || line.startsWith('-'))) {
+          if (line.startsWith(' ')) {
+            currentLine += 1;
+          }
+        }
+      }
 
       return {
         filePath,
         diff: body,
         addedLines,
+        addedLineNumbers,
+        hasHunks,
       };
     })
     .filter((file) => isAuditableCodeFile(file.filePath) && filterAuditableFiles([file.filePath], cwd).includes(file.filePath))
@@ -182,6 +214,8 @@ function createIssue(
     suggestedAction: string;
     confidence?: number;
     detectionSource?: DetectionSource;
+    line?: number;
+    column?: number;
   },
 ): DriftIssue | null {
   const severity = getSeverity(config, params.ruleId);
@@ -203,6 +237,8 @@ function createIssue(
     suggestedAction: params.suggestedAction,
     detectionSource: params.detectionSource ?? 'deterministic',
     status: 'new',
+    line: params.line,
+    column: params.column,
   };
 }
 
@@ -224,73 +260,124 @@ function detectStyleRuleIssues(
   config: DesignMemoryConfig,
   ctx: FileIssueContext,
   allowedHexes: Set<string>,
+  theme: ThemeTokens,
 ) {
-  const rawHexes = Array.from(new Set(ctx.rawText.match(/#(?:[0-9a-fA-F]{3,8})\b/g) ?? []));
-  for (const hex of rawHexes) {
-    if (!allowedHexes.has(hex.toLowerCase())) {
-      pushIssue(issues, createIssue(config, {
-        ruleId: 'color.raw-hex',
-        componentName: ctx.defaultComponentName,
-        filePath: ctx.file.filePath,
-        expected: 'Use approved color tokens from the reference snapshot.',
-        found: hex,
-        evidenceSnippet: ctx.rawText,
-        suggestedAction: `Replace ${hex} with an approved design token or token-backed class.`,
-      }));
-    }
-  }
+  // With real hunks, only report drift on lines added by this diff (net-new semantics).
+  // Test harness diffs carry no hunk headers, so fall back to reporting everything.
+  const isChangedLine = ctx.file.hasHunks
+    ? (line: number) => ctx.file.addedLineNumbers.has(line)
+    : () => true;
 
-  for (const line of ctx.file.addedLines) {
-    const spacingMatches = line.match(/\b(?:p|px|py|pt|pr|pb|pl|m|mx|my|mt|mr|mb|ml|gap)-\[[^\]]+\]/g) ?? [];
-    for (const match of spacingMatches) {
+  for (const classToken of ctx.styleUsages.classTokens) {
+    if (!isChangedLine(classToken.line)) {
+      continue;
+    }
+
+    // Strip variant prefixes (hover:bg-primary -> bg-primary) before matching.
+    const segments = classToken.value.split(':');
+    const cls = segments[segments.length - 1];
+
+    const hexMatch = cls.match(/^[a-z-]+-\[(#[0-9a-fA-F]{3,8})\]$/);
+    if (hexMatch) {
+      const hex = hexMatch[1].toLowerCase();
+      if (!allowedHexes.has(hex)) {
+        pushIssue(issues, createIssue(config, {
+          ruleId: 'color.raw-hex',
+          componentName: ctx.defaultComponentName,
+          filePath: ctx.file.filePath,
+          expected: 'Use approved color tokens from the reference snapshot.',
+          found: cls,
+          evidenceSnippet: cls,
+          suggestedAction: `Replace ${cls} with an approved design token or token-backed class.`,
+          line: classToken.line,
+          column: classToken.column,
+        }));
+      }
+      continue;
+    }
+
+    const spacingMatch = cls.match(/^(p|px|py|pt|pr|pb|pl|m|mx|my|mt|mr|mb|ml|gap)-\[([^\]]+)\]$/);
+    if (spacingMatch && !isThemeBacked(theme, 'spacing', spacingMatch[2])) {
       pushIssue(issues, createIssue(config, {
         ruleId: 'tailwind.arbitrary-spacing',
         componentName: ctx.defaultComponentName,
         filePath: ctx.file.filePath,
         expected: 'Use token-backed spacing classes instead of arbitrary spacing values.',
-        found: match,
-        evidenceSnippet: line,
-        suggestedAction: `Replace ${match} with an approved spacing token/class.`,
+        found: cls,
+        evidenceSnippet: cls,
+        suggestedAction: `Replace ${cls} with an approved spacing token/class.`,
+        line: classToken.line,
+        column: classToken.column,
       }));
+      continue;
     }
 
-    const radiusMatches = line.match(/\brounded(?:-[trbl]{1,2})?-\[[^\]]+\]/g) ?? [];
-    for (const match of radiusMatches) {
+    const radiusMatch = cls.match(/^rounded(?:-[trbl]{1,2})?-\[([^\]]+)\]$/);
+    if (radiusMatch && !isThemeBacked(theme, 'radius', radiusMatch[1])) {
       pushIssue(issues, createIssue(config, {
         ruleId: 'tailwind.arbitrary-radius',
         componentName: ctx.defaultComponentName,
         filePath: ctx.file.filePath,
         expected: 'Use approved radius classes instead of arbitrary radius values.',
-        found: match,
-        evidenceSnippet: line,
-        suggestedAction: `Replace ${match} with an approved radius token/class.`,
+        found: cls,
+        evidenceSnippet: cls,
+        suggestedAction: `Replace ${cls} with an approved radius token/class.`,
+        line: classToken.line,
+        column: classToken.column,
       }));
+      continue;
     }
 
-    const fontSizeMatches = line.match(/\btext-\[[^\]]+\]/g) ?? [];
-    for (const match of fontSizeMatches) {
+    const fontSizeMatch = cls.match(/^text-\[([^\]]+)\]$/);
+    if (fontSizeMatch && !isThemeBacked(theme, 'text', fontSizeMatch[1])) {
       pushIssue(issues, createIssue(config, {
         ruleId: 'tailwind.arbitrary-font-size',
         componentName: ctx.defaultComponentName,
         filePath: ctx.file.filePath,
         expected: 'Use approved typography scale classes instead of arbitrary font-size values.',
-        found: match,
-        evidenceSnippet: line,
-        suggestedAction: `Replace ${match} with an approved typography token/class.`,
+        found: cls,
+        evidenceSnippet: cls,
+        suggestedAction: `Replace ${cls} with an approved typography token/class.`,
+        line: classToken.line,
+        column: classToken.column,
       }));
     }
+  }
 
-    if (/style=\{\{/.test(line)) {
-      pushIssue(issues, createIssue(config, {
-        ruleId: 'style.inline',
-        componentName: ctx.defaultComponentName,
-        filePath: ctx.file.filePath,
-        expected: 'Avoid inline styles in audited UI files.',
-        found: 'style={{ ... }}',
-        evidenceSnippet: line,
-        suggestedAction: 'Move the inline style into approved Tailwind utilities or token-backed classes.',
-      }));
+  for (const prop of ctx.styleUsages.styleProps) {
+    if (!isChangedLine(prop.line)) {
+      continue;
     }
+    const hexes = Array.from(new Set(prop.value.match(/#(?:[0-9a-fA-F]{3,8})\b/g) ?? []));
+    for (const hex of hexes) {
+      if (!allowedHexes.has(hex.toLowerCase())) {
+        pushIssue(issues, createIssue(config, {
+          ruleId: 'color.raw-hex',
+          componentName: ctx.defaultComponentName,
+          filePath: ctx.file.filePath,
+          expected: 'Use approved color tokens from the reference snapshot.',
+          found: hex,
+          evidenceSnippet: `${prop.key}: ${prop.value}`,
+          suggestedAction: `Replace ${hex} with an approved design token or token-backed class.`,
+          line: prop.line,
+          column: prop.column,
+        }));
+      }
+    }
+  }
+
+  if (ctx.styleUsages.inlineStyleCount > 0 && isChangedLine(ctx.styleUsages.styleProps[0]?.line ?? 0)) {
+    pushIssue(issues, createIssue(config, {
+      ruleId: 'style.inline',
+      componentName: ctx.defaultComponentName,
+      filePath: ctx.file.filePath,
+      expected: 'Avoid inline styles in audited UI files.',
+      found: 'style={{ ... }}',
+      evidenceSnippet: 'style={{ ... }}',
+      suggestedAction: 'Move the inline style into approved Tailwind utilities or token-backed classes.',
+      line: ctx.styleUsages.styleProps[0]?.line,
+      column: ctx.styleUsages.styleProps[0]?.column,
+    }));
   }
 }
 
@@ -404,21 +491,36 @@ function detectTokenMismatchIssues(
   }
 }
 
-function findDeterministicIssues(snapshot: ReferenceSnapshot, files: FileDiff[], mappings: Mapping[], config: DesignMemoryConfig) {
+function findDeterministicIssues(
+  snapshot: ReferenceSnapshot,
+  files: FileDiff[],
+  mappings: Mapping[],
+  config: DesignMemoryConfig,
+  cwd: string,
+) {
   const issues: DriftIssue[] = [];
-  const allowedHexes = new Set(snapshot.tokens.map((token) => token.value?.toLowerCase()).filter(Boolean) as string[]);
+  const theme = loadThemeTokens(cwd);
+  const allowedHexes = new Set([
+    ...(snapshot.tokens.map((token) => token.value?.toLowerCase()).filter(Boolean) as string[]),
+    ...Array.from(theme.colors.values()).filter((value) => value.startsWith('#')),
+  ]);
   const tokenMatchers = buildTokenMatchers(snapshot);
 
   for (const file of files) {
     const fileMappings = mappings.filter((mapping) => mapping.filePath === file.filePath);
+    const fullText = file.fullContent ?? file.addedLines.join('\n');
+    const isCodeLike = /\.[jt]sx?$/.test(file.filePath);
     const ctx: FileIssueContext = {
       file,
       defaultComponentName: fileMappings[0]?.componentName ?? (toPascalCase(getFileStem(file.filePath)) || 'UnknownComponent'),
       rawText: file.addedLines.join('\n'),
-      fullText: file.fullContent ?? file.addedLines.join('\n'),
+      fullText,
+      styleUsages: isCodeLike
+        ? extractStyleUsages(fullText, scriptKindForFile(file.filePath))
+        : { classTokens: [], styleProps: [], inlineStyleCount: 0 },
     };
 
-    detectStyleRuleIssues(issues, config, ctx, allowedHexes);
+    detectStyleRuleIssues(issues, config, ctx, allowedHexes, theme);
     detectComponentContractIssues(issues, snapshot, config, fileMappings, ctx);
     detectTokenMismatchIssues(issues, config, tokenMatchers, snapshot, fileMappings, ctx);
   }
@@ -599,7 +701,8 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
   const askBrain = deps.askBrain ?? promptBrain;
   const exit = deps.exit ?? process.exit;
 
-  console.log('\x1b[36m%s\x1b[0m', '[Design Memory] Starting audit...');
+  // Banner on stderr so --json stdout stays parseable.
+  console.error('\x1b[36m%s\x1b[0m', '[Design Memory] Starting audit...');
   const diff = options.diff ?? getDiff(cwd);
   if (!diff) {
     console.log('[Design Memory] No staged UI changes detected. Skipping audit.');
@@ -625,7 +728,7 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
         : options.prScan?.files.find((entry) => entry.path === file.filePath)?.content ?? null,
   }));
   const mappings = matchComponents(snapshot, files);
-  let issues = findDeterministicIssues(snapshot, files, mappings, config);
+  let issues = findDeterministicIssues(snapshot, files, mappings, config, cwd);
   issues = applyReviewAndBaselineState(issues, cwd);
 
   if (config.llmFallback.enabled && config.llmFallback.mode !== 'disabled' && issues.length > 0) {

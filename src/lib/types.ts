@@ -118,6 +118,8 @@ export type DriftIssue = {
   suggestedAction: string;
   detectionSource: DetectionSource;
   status: DriftStatus;
+  line?: number;
+  column?: number;
 };
 
 export type IssueReview = {

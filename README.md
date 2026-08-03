@@ -4,7 +4,7 @@
 
 Design Memory blocks net-new design policy violations and reference mismatches in React/Tailwind PRs with deterministic checks first.
 
-This repo is currently documented as a local-first CLI tool. It is not published to npm yet, so the primary install path is local development plus `npm link`.
+The primary install paths are local development (`npm link`), the [GitHub Action](#github-action) for PR-gate enforcement, and the MCP/agent surfaces for agent workflows.
 
 ## What It Is
 
@@ -33,6 +33,15 @@ design-memory ghost
 ```
 
 `ghost` is optional. It is not part of the primary workflow.
+
+## Demo
+
+```bash
+npm run build
+npm run demo:design-memory:audit
+```
+
+Runs the real engine against a throwaway repo: a clean pass, a blocked drift commit, and a Tailwind v4 `@theme`-backed pass. See `examples/design-memory-showcase/README.md`.
 
 ## Local Development Install
 
@@ -64,6 +73,32 @@ design-memory audit
 ```
 
 For agent tooling or remote orchestration, the same commands accept `--cwd /absolute/path/to/repo`.
+
+## GitHub Action
+
+Add Design Memory as a PR check on any React/Tailwind repo. The action installs the CLI, syncs the repo's design reference, audits the PR diff, annotates findings on the changed lines, and fails the check on net-new error findings.
+
+```yaml
+name: design-memory
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: derinbarutcu17/DesignMemory@main
+        with:
+          strictness: block # or warn for advisory-only
+```
+
+The target repo needs a committed design reference (`DESIGN.md` at the root, or a `design-memory.config.json` pointing at a Stitch/Figma source).
 
 ## Canonical Config
 
@@ -204,9 +239,9 @@ design-memory compare
 
 ## Deterministic Rule Engine
 
-Current deterministic rule pack focuses on React/Tailwind drift:
+Current deterministic rule pack focuses on React/Tailwind drift. Style rules are AST-based: only real `className`/`style` JSX attributes are inspected, so hex values in comments, strings, or docs never trigger:
 
-- raw hex colors
+- raw hex colors (in arbitrary-value classes and inline style objects)
 - arbitrary Tailwind spacing values
 - arbitrary Tailwind radius values
 - arbitrary Tailwind font sizes
@@ -214,6 +249,10 @@ Current deterministic rule pack focuses on React/Tailwind drift:
 - token mismatch using snapshot aliases and code hints
 - component required/disallowed patterns
 - explicit variant drift and missing state checks where the snapshot is explicit
+
+Tailwind v4 support: arbitrary values backed by the repo's own `@theme` tokens are allowed. For example `rounded-[8px]` passes when `--radius-lg: 8px` is defined in the theme CSS, and `--color-*` token values are treated as approved hex colors. Repos without `@theme` keep strict behavior.
+
+Every finding carries `line` and `column` (1-based) when it points at a specific code location, which powers GitHub Action annotations.
 
 ## AI Role
 
@@ -269,7 +308,9 @@ Machine-readable output is available via `--json`.
       "evidenceSnippet": "className=\"rounded-[14px] px-4 py-2\"",
       "suggestedAction": "Replace rounded-[14px] with an approved radius token/class.",
       "detectionSource": "deterministic",
-      "status": "new"
+      "status": "new",
+      "line": 4,
+      "column": 17
     }
   ]
 }

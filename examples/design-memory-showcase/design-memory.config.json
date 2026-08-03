@@ -1,0 +1,38 @@
+{
+  "strictness": "block",
+  "stateDir": ".design-memory",
+  "reference": {
+    "sourceType": "design-md",
+    "path": "./DESIGN.md",
+    "figmaFileKey": "",
+    "figmaUrl": "",
+    "stitchPath": "",
+    "strictDesignMd": false
+  },
+  "include": ["src/**/*.tsx"],
+  "exclude": ["**/*.test.tsx", "**/*.test.ts"],
+  "rules": {
+    "color.raw-hex": "error",
+    "tailwind.arbitrary-spacing": "error",
+    "tailwind.arbitrary-radius": "error",
+    "tailwind.arbitrary-font-size": "warn",
+    "style.inline": "error",
+    "token.mismatch": "error",
+    "component.required-pattern": "error",
+    "component.disallowed-pattern": "error",
+    "component.variant-drift": "warn",
+    "component.missing-state": "warn"
+  },
+  "baseline": {
+    "mode": "net-new-only"
+  },
+  "llmFallback": {
+    "enabled": false,
+    "mode": "explain-only"
+  },
+  "ai": {
+    "providerPreference": ["local", "anthropic", "openai"],
+    "maxRetries": 1
+  },
+  "visualProvider": "none"
+}

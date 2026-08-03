@@ -1,0 +1,36 @@
+name: Design Memory
+description: >-
+  Blocks net-new design drift in React/Tailwind PRs using deterministic checks
+  against the repository design reference (DESIGN.md or Stitch/Figma snapshot).
+inputs:
+  strictness:
+    description: >-
+      warn or block. block fails the check on net-new error findings.
+    required: false
+    default: block
+runs:
+  using: composite
+  steps:
+    - name: Build Design Memory CLI
+      shell: bash
+      run: |
+        npm ci --prefix "${{ github.action_path }}" --no-audit --no-fund
+        npm run build --prefix "${{ github.action_path }}"
+
+    - name: Sync design reference
+      shell: bash
+      run: node "${{ github.action_path }}/dist/cli/index.js" sync-reference --cwd "$GITHUB_WORKSPACE"
+
+    - name: Audit pull request
+      if: github.event_name == 'pull_request'
+      shell: bash
+      run: |
+        node "${{ github.action_path }}/dist/cli/index.js" scan --pr "${{ github.event.pull_request.number }}" --json --cwd "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/design-memory-run.json"
+
+    - name: Report findings
+      if: always() && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        DM_RUN_FILE: "${{ runner.temp }}/design-memory-run.json"
+        DM_STRICTNESS: "${{ inputs.strictness }}"
+      run: node "${{ github.action_path }}/post.mjs"
