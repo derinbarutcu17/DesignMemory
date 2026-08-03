@@ -88,6 +88,7 @@ export type AuditRun = {
     detectionSource: DetectionSource;
   }>;
   issues: DriftIssue[];
+  warnings?: string[];
   comparison?: {
     resolvedFingerprints: string[];
     remainingFingerprints: string[];

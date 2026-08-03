@@ -3,7 +3,7 @@
   "tools": [
     {
       "name": "design_memory_audit",
-      "description": "Executes a local staged-file design policy audit against the synced reference snapshot for the current repository.",
+      "description": "Runs the net-new-only design drift audit against the synced reference snapshot for the repository. Blocks only new or reopened drift (baseline + review memory applied). Exit codes: 0 = clean, 1 = drift found, 2 = no reference snapshot (run sync-reference first). For the agent loop use the CLI directly: `design-memory audit --json` emits the full AuditRun document (issues with line/col and suggested fixes, warnings) as the only stdout content.",
       "parameters": {
         "type": "object",
         "properties": {

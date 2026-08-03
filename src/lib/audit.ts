@@ -9,6 +9,7 @@ import { detectAvailableBrain, promptBrain } from './engine';
 import { readConfig, type DesignMemoryConfig, type RuleId, type RuleSeverity } from './config';
 import { getPullRequestScan, type PullRequestScan } from './github';
 import { createBaseline, loadBaseline, loadLatestRun, loadReferenceSnapshot, loadReviews, loadRunHistory, makeRunId, saveAuditRun } from './state';
+import { findClosestToken, replacementSuggestion } from './tokens/closest';
 import type { AuditRun, DetectionSource, DriftIssue, ReferenceSnapshot } from './types';
 import { hashParts, normalizeForMatch, prettyJson, toPascalCase, uniqueStrings } from './utils';
 
@@ -261,6 +262,7 @@ function detectStyleRuleIssues(
   ctx: FileIssueContext,
   allowedHexes: Set<string>,
   theme: ThemeTokens,
+  snapshot: ReferenceSnapshot,
 ) {
   // With real hunks, only report drift on lines added by this diff (net-new semantics).
   // Test harness diffs carry no hunk headers, so fall back to reporting everything.
@@ -281,6 +283,7 @@ function detectStyleRuleIssues(
     if (hexMatch) {
       const hex = hexMatch[1].toLowerCase();
       if (!allowedHexes.has(hex)) {
+        const closest = findClosestToken(snapshot.tokens.filter((token) => token.kind === 'color'), hex);
         pushIssue(issues, createIssue(config, {
           ruleId: 'color.raw-hex',
           componentName: ctx.defaultComponentName,
@@ -288,7 +291,7 @@ function detectStyleRuleIssues(
           expected: 'Use approved color tokens from the reference snapshot.',
           found: cls,
           evidenceSnippet: cls,
-          suggestedAction: `Replace ${cls} with an approved design token or token-backed class.`,
+          suggestedAction: replacementSuggestion(closest, cls),
           line: classToken.line,
           column: classToken.column,
         }));
@@ -298,6 +301,7 @@ function detectStyleRuleIssues(
 
     const spacingMatch = cls.match(/^(p|px|py|pt|pr|pb|pl|m|mx|my|mt|mr|mb|ml|gap)-\[([^\]]+)\]$/);
     if (spacingMatch && !isThemeBacked(theme, 'spacing', spacingMatch[2])) {
+      const closest = findClosestToken(snapshot.tokens.filter((token) => token.kind === 'spacing'), spacingMatch[2]);
       pushIssue(issues, createIssue(config, {
         ruleId: 'tailwind.arbitrary-spacing',
         componentName: ctx.defaultComponentName,
@@ -305,7 +309,7 @@ function detectStyleRuleIssues(
         expected: 'Use token-backed spacing classes instead of arbitrary spacing values.',
         found: cls,
         evidenceSnippet: cls,
-        suggestedAction: `Replace ${cls} with an approved spacing token/class.`,
+        suggestedAction: replacementSuggestion(closest, cls),
         line: classToken.line,
         column: classToken.column,
       }));
@@ -314,6 +318,7 @@ function detectStyleRuleIssues(
 
     const radiusMatch = cls.match(/^rounded(?:-[trbl]{1,2})?-\[([^\]]+)\]$/);
     if (radiusMatch && !isThemeBacked(theme, 'radius', radiusMatch[1])) {
+      const closest = findClosestToken(snapshot.tokens.filter((token) => token.kind === 'borderRadius'), radiusMatch[1]);
       pushIssue(issues, createIssue(config, {
         ruleId: 'tailwind.arbitrary-radius',
         componentName: ctx.defaultComponentName,
@@ -321,7 +326,7 @@ function detectStyleRuleIssues(
         expected: 'Use approved radius classes instead of arbitrary radius values.',
         found: cls,
         evidenceSnippet: cls,
-        suggestedAction: `Replace ${cls} with an approved radius token/class.`,
+        suggestedAction: replacementSuggestion(closest, cls),
         line: classToken.line,
         column: classToken.column,
       }));
@@ -330,6 +335,7 @@ function detectStyleRuleIssues(
 
     const fontSizeMatch = cls.match(/^text-\[([^\]]+)\]$/);
     if (fontSizeMatch && !isThemeBacked(theme, 'text', fontSizeMatch[1])) {
+      const closest = findClosestToken(snapshot.tokens.filter((token) => token.kind === 'fontSize'), fontSizeMatch[1]);
       pushIssue(issues, createIssue(config, {
         ruleId: 'tailwind.arbitrary-font-size',
         componentName: ctx.defaultComponentName,
@@ -337,7 +343,7 @@ function detectStyleRuleIssues(
         expected: 'Use approved typography scale classes instead of arbitrary font-size values.',
         found: cls,
         evidenceSnippet: cls,
-        suggestedAction: `Replace ${cls} with an approved typography token/class.`,
+        suggestedAction: replacementSuggestion(closest, cls),
         line: classToken.line,
         column: classToken.column,
       }));
@@ -351,6 +357,7 @@ function detectStyleRuleIssues(
     const hexes = Array.from(new Set(prop.value.match(/#(?:[0-9a-fA-F]{3,8})\b/g) ?? []));
     for (const hex of hexes) {
       if (!allowedHexes.has(hex.toLowerCase())) {
+        const closest = findClosestToken(snapshot.tokens.filter((token) => token.kind === 'color'), hex);
         pushIssue(issues, createIssue(config, {
           ruleId: 'color.raw-hex',
           componentName: ctx.defaultComponentName,
@@ -358,7 +365,7 @@ function detectStyleRuleIssues(
           expected: 'Use approved color tokens from the reference snapshot.',
           found: hex,
           evidenceSnippet: `${prop.key}: ${prop.value}`,
-          suggestedAction: `Replace ${hex} with an approved design token or token-backed class.`,
+          suggestedAction: replacementSuggestion(closest, hex),
           line: prop.line,
           column: prop.column,
         }));
@@ -483,7 +490,7 @@ function detectTokenMismatchIssues(
           expected: `Use approved token ${matcher.token.name} for ${component.name}.`,
           found: 'Changed code does not reference any approved token aliases or code hints.',
           evidenceSnippet: ctx.rawText,
-          suggestedAction: `Replace hardcoded values with ${matcher.token.name} or one of its approved aliases.`,
+          suggestedAction: `Replace hardcoded values with ${matcher.token.codeHints?.[0] ?? matcher.token.name} (token ${matcher.token.name}).`,
           confidence: 0.8,
         }));
       }
@@ -520,7 +527,7 @@ function findDeterministicIssues(
         : { classTokens: [], styleProps: [], inlineStyleCount: 0 },
     };
 
-    detectStyleRuleIssues(issues, config, ctx, allowedHexes, theme);
+    detectStyleRuleIssues(issues, config, ctx, allowedHexes, theme, snapshot);
     detectComponentContractIssues(issues, snapshot, config, fileMappings, ctx);
     detectTokenMismatchIssues(issues, config, tokenMatchers, snapshot, fileMappings, ctx);
   }
@@ -713,11 +720,22 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
   let snapshot = getSnapshot(cwd);
   if (!snapshot) {
     console.error('[Design Memory] No reference snapshot found. Run `design-memory sync-reference` first.');
-    exit(1);
+    exit(2);
     return;
   }
   if (!snapshot.metadata.importedAt) {
     snapshot = await resolveSnapshot(cwd);
+  }
+
+  const warnings: string[] = [];
+  if (snapshot.metadata.importedAt) {
+    const importedAt = new Date(snapshot.metadata.importedAt).getTime();
+    const daysOld = Math.floor((Date.now() - importedAt) / 86_400_000);
+    if (daysOld >= 7) {
+      const message = `reference snapshot is ${daysOld} days old, run design-memory sync-reference`;
+      warnings.push(message);
+      console.warn(`\x1b[33m%s\x1b[0m`, `[Design Memory] ⚠️ ${message}`);
+    }
   }
 
   const files = parseDiffIntoFiles(diff, config, cwd).map((file) => ({
@@ -767,6 +785,7 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
       detectionSource: mapping.detectionSource,
     })),
     issues,
+    warnings,
     comparison,
     createdAt: new Date().toISOString(),
   };
