@@ -1,28 +1,35 @@
 # Design Memory Showcase
 
-A self-contained demo that runs the real Design Memory engine against a throwaway git repo. No build step, no network, no dependencies beyond the repo's own `npm run build`.
+A self-contained demo that runs the real Design Memory engine against a throwaway git repo. It is also a real Vite + React + Tailwind v4 app — the "clean" side of the story.
 
 ## Run it
 
 ```bash
-npm run build
-npm run demo:design-memory:audit
+npm install          # only needed for the app itself
+npm run dev          # the app
+npm run demo         # the 6-act audit story (builds the engine if needed)
 ```
 
-## What you'll see
+From the repo root: `npm run demo:design-memory:audit`.
 
-1. **Run 1** — a new, token-correct component (`Input.tsx`) passes with zero findings.
-2. **Run 2** — `Button.tsx` gains drift (`rounded-[14px]`, inline `style={{ color: '#ff0000' }}`, missing hover state). The audit finds it and blocks the commit with exit code 1.
-3. **Run 3** — arbitrary values that ARE backed by the repo's Tailwind v4 `@theme` tokens (`rounded-[8px]`, `p-[16px]` backed by `--radius-lg: 8px`, `--spacing-4: 16px`) pass clean.
+## The 6 acts
+
+1. **Sync the design truth** — `tokens.json` (W3C DTCG) + `DESIGN.md` → reference snapshot.
+2. **Baseline the brownfield** — pre-existing drift is accepted; only net-new drift blocks from here on.
+3. **Clean pass** — a new token-correct component stages with zero findings.
+4. **Drift blocked** — raw hex, arbitrary padding/radius, and an inline style are caught with exact line:column and closest-token suggestions (`Replace p-[9px] with p-sm (token spacing.sm)`).
+5. **Theme-backed arbitrary values pass** — values defined in the repo's own `@theme` are allowed.
+6. **Review memory** — a finding marked `intentional` stops blocking every future run.
 
 ## Layout
 
-- `DESIGN.md` — the design reference contract (tokens + Button contract)
-- `design-memory.config.json` — audit config (block strictness)
-- `src/styles/theme.css` — Tailwind v4 `@theme` tokens read by the engine
+- `tokens.json` — DTCG token file (the design truth, Tokens Studio / Figma export format)
+- `DESIGN.md` — component contracts (Button, Input, Card, Badge) in the aligned format
+- `design-memory.config.json` — dtcg source + designMdPath
+- `src/styles/theme.css` — Tailwind v4 `@theme` generated from the tokens
 - `src/components/` — clean, token-correct components
-- `drift/` — the drift variants the demo copies in
-- `scripts/demo.sh` — the demo harness (temp repo, baseline commit, three audit runs)
+- `drift/` — the drift variants the demo stages
+- `scripts/demo.sh` — the 6-act harness against `dist/`
 
 ## Trying it on your own repo
 
@@ -33,4 +40,4 @@ git add .
 design-memory audit
 ```
 
-Or add the GitHub Action for PR-gate enforcement (see the main README).
+Or add the GitHub Action for PR-gate enforcement (see the main README — the live demo repo `derinbarutcu17/design-memory-demo` runs it on every PR).
