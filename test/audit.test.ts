@@ -21,7 +21,7 @@ test('buildAuditPrompt contains deterministic facts contract', () => {
   assert.match(prompt.userPrompt, /DETERMINISTIC FACTS:/);
 });
 
-test('runAudit exits 1 when no reference snapshot exists', async () => {
+test('runAudit exits 2 when no reference snapshot exists', async () => {
   const cwd = makeTempDir();
   writeConfig(cwd);
 
@@ -34,7 +34,7 @@ test('runAudit exits 1 when no reference snapshot exists', async () => {
     }) as typeof process.exit,
   }, { cwd });
 
-  assert.equal(exitCode, 1);
+  assert.equal(exitCode, 2);
 });
 
 test('runAudit creates a baseline and later only blocks on net-new error findings', async () => {
