@@ -19,11 +19,15 @@ runs:
 
     - name: Sync design reference
       shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: node "${{ github.action_path }}/dist/cli/index.js" sync-reference --cwd "$GITHUB_WORKSPACE"
 
     - name: Audit pull request
       if: github.event_name == 'pull_request'
       shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         node "${{ github.action_path }}/dist/cli/index.js" scan --pr "${{ github.event.pull_request.number }}" --json --cwd "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/design-memory-run.json"
 
