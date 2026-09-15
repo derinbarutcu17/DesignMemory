@@ -24,6 +24,8 @@ function positionOf(sourceFile: ts.SourceFile, node: ts.Node) {
   return { line: pos.line + 1, column: pos.character + 1 };
 }
 
+const CLASS_HELPERS = new Set(['cn', 'clsx', 'classnames', 'classNames', 'twMerge', 'cx']);
+
 function extractStaticText(
   initializer: ts.Expression | undefined,
   sourceFile: ts.SourceFile,
@@ -32,13 +34,33 @@ function extractStaticText(
     return null;
   }
 
-  const resolve = (expr: ts.Expression) => {
+  const resolve = (expr: ts.Expression): { text: string; line: number; column: number } | null => {
     if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) {
       return { text: expr.text, ...positionOf(sourceFile, expr) };
     }
     if (ts.isTemplateExpression(expr)) {
       const parts = [expr.head.text, ...expr.templateSpans.map((span) => span.literal.text)];
       return { text: parts.join(' '), ...positionOf(sourceFile, expr) };
+    }
+    if (ts.isParenthesizedExpression(expr)) {
+      return resolve(expr.expression);
+    }
+    if (ts.isConditionalExpression(expr)) {
+      const whenTrue = resolve(expr.whenTrue);
+      const whenFalse = resolve(expr.whenFalse);
+      const text = [whenTrue?.text, whenFalse?.text].filter(Boolean).join(' ');
+      return text ? { text, ...positionOf(sourceFile, expr) } : null;
+    }
+    if (ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
+      return resolve(expr.right);
+    }
+    if (ts.isCallExpression(expr)) {
+      const callee = expr.expression.getText(sourceFile).split('.').pop() ?? '';
+      if (!CLASS_HELPERS.has(callee)) {
+        return null;
+      }
+      const parts = expr.arguments.map((argument) => resolve(argument)?.text ?? '').filter(Boolean);
+      return parts.length > 0 ? { text: parts.join(' '), ...positionOf(sourceFile, expr) } : null;
     }
     return null;
   };
