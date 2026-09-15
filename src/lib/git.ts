@@ -31,7 +31,9 @@ export function assertGitRepo(cwd = process.cwd(), exec: ExecFileSyncLike = exec
 }
 
 function collectDiff(nameArgs: string[], diffArgsForFile: (file: string) => string[], cwd: string, exec: ExecFileSyncLike) {
-  const changedFiles = git(nameArgs, cwd, exec)
+  // --relative keeps paths relative to cwd and scopes the diff to this directory,
+  // so running in a package folder of a monorepo behaves like running at the root.
+  const changedFiles = git([...nameArgs, '--relative'], cwd, exec)
     .split('\n')
     .map((file) => file.trim())
     .filter((file) => file.length > 0);
@@ -76,7 +78,7 @@ export function getStagedFileContent(
   cwd = process.cwd(),
   exec: ExecFileSyncLike = execFileSync,
 ) {
-  return git(['show', `:${filePath}`], cwd, exec);
+  return git(['show', `:./${filePath}`], cwd, exec);
 }
 
 export function getStagedDiff(

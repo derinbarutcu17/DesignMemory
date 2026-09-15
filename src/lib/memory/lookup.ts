@@ -32,23 +32,6 @@ function valueMatches(decision: Decision, issue: IssueLike) {
   return found === target || found.includes(target);
 }
 
-function pathMatches(decision: Decision, issue: IssueLike) {
-  const target = decision.target;
-  if (target.fingerprint && target.fingerprint === issue.fingerprint) {
-    return true;
-  }
-  if (target.file && target.file === issue.filePath) {
-    return true;
-  }
-  if (target.component && target.component === issue.componentName) {
-    return true;
-  }
-  if (target.glob && matchesGlob(issue.filePath, target.glob)) {
-    return true;
-  }
-  return false;
-}
-
 export function findDecisionForIssue(issue: IssueLike, decisions: Decision[]): DecisionMatch | null {
   const active = decisions.filter((decision) => decision.status === 'active');
   const guard = (decision: Decision) => (decision.target.value ? valueMatches(decision, issue) : true);

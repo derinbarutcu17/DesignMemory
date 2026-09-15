@@ -4,7 +4,16 @@ import tsPlugin from '@typescript-eslint/eslint-plugin';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '.playwright-cli/**', '.next/**'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '.playwright-cli/**',
+      '.next/**',
+      'apps/**',
+      'bake/.sandbox/**',
+      'docs/graphics/**',
+      'docs/video/**',
+    ],
   },
   js.configs.recommended,
   {

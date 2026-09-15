@@ -1,0 +1,589 @@
+{
+  "metadata": {
+    "source": "dtcg+design-md",
+    "versionLabel": "tokens.json",
+    "importedAt": "2026-09-15T15:20:23.538Z",
+    "fileName": "tokens.json",
+    "tokenCount": 36,
+    "componentCount": 6,
+    "variantCount": 4,
+    "stateCount": 4
+  },
+  "tokens": [
+    {
+      "name": "color.primary",
+      "kind": "color",
+      "value": "#1d4ed8",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-primary",
+        "text-primary",
+        "border-primary"
+      ]
+    },
+    {
+      "name": "color.primaryHover",
+      "kind": "color",
+      "value": "#1e40af",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-primary-hover",
+        "text-primary-hover",
+        "border-primary-hover"
+      ]
+    },
+    {
+      "name": "color.success",
+      "kind": "color",
+      "value": "#15803d",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-success",
+        "text-success",
+        "border-success"
+      ]
+    },
+    {
+      "name": "color.warning",
+      "kind": "color",
+      "value": "#b45309",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-warning",
+        "text-warning",
+        "border-warning"
+      ]
+    },
+    {
+      "name": "color.danger",
+      "kind": "color",
+      "value": "#b91c1c",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-danger",
+        "text-danger",
+        "border-danger"
+      ]
+    },
+    {
+      "name": "color.info",
+      "kind": "color",
+      "value": "#0e7490",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-info",
+        "text-info",
+        "border-info"
+      ]
+    },
+    {
+      "name": "color.surface",
+      "kind": "color",
+      "value": "#ffffff",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-surface",
+        "text-surface",
+        "border-surface"
+      ]
+    },
+    {
+      "name": "color.surfaceRaised",
+      "kind": "color",
+      "value": "#f8fafc",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-surface-raised",
+        "text-surface-raised",
+        "border-surface-raised"
+      ]
+    },
+    {
+      "name": "color.border",
+      "kind": "color",
+      "value": "#e2e8f0",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-border",
+        "text-border",
+        "border-border"
+      ]
+    },
+    {
+      "name": "color.borderStrong",
+      "kind": "color",
+      "value": "#cbd5e1",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-border-strong",
+        "text-border-strong",
+        "border-border-strong"
+      ]
+    },
+    {
+      "name": "color.text",
+      "kind": "color",
+      "value": "#0f172a",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-text",
+        "text-text",
+        "border-text"
+      ]
+    },
+    {
+      "name": "color.textMuted",
+      "kind": "color",
+      "value": "#64748b",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-text-muted",
+        "text-text-muted",
+        "border-text-muted"
+      ]
+    },
+    {
+      "name": "color.chartGrid",
+      "kind": "color",
+      "value": "#eef2f6",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "bg-chart-grid",
+        "text-chart-grid",
+        "border-chart-grid"
+      ]
+    },
+    {
+      "name": "spacing.1",
+      "kind": "spacing",
+      "value": "4px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "p-1",
+        "m-1",
+        "gap-1"
+      ]
+    },
+    {
+      "name": "spacing.2",
+      "kind": "spacing",
+      "value": "8px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "p-2",
+        "m-2",
+        "gap-2"
+      ]
+    },
+    {
+      "name": "spacing.3",
+      "kind": "spacing",
+      "value": "12px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "p-3",
+        "m-3",
+        "gap-3"
+      ]
+    },
+    {
+      "name": "spacing.4",
+      "kind": "spacing",
+      "value": "16px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "p-4",
+        "m-4",
+        "gap-4"
+      ]
+    },
+    {
+      "name": "spacing.5",
+      "kind": "spacing",
+      "value": "20px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "p-5",
+        "m-5",
+        "gap-5"
+      ]
+    },
+    {
+      "name": "spacing.6",
+      "kind": "spacing",
+      "value": "24px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "p-6",
+        "m-6",
+        "gap-6"
+      ]
+    },
+    {
+      "name": "spacing.8",
+      "kind": "spacing",
+      "value": "32px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "p-8",
+        "m-8",
+        "gap-8"
+      ]
+    },
+    {
+      "name": "borderRadius.sm",
+      "kind": "borderRadius",
+      "value": "6px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "rounded-sm"
+      ]
+    },
+    {
+      "name": "borderRadius.md",
+      "kind": "borderRadius",
+      "value": "10px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "rounded-md"
+      ]
+    },
+    {
+      "name": "borderRadius.lg",
+      "kind": "borderRadius",
+      "value": "14px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "rounded-lg"
+      ]
+    },
+    {
+      "name": "borderRadius.full",
+      "kind": "borderRadius",
+      "value": "9999px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "rounded-full"
+      ]
+    },
+    {
+      "name": "fontSize.xs",
+      "kind": "fontSize",
+      "value": "12px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "text-xs"
+      ]
+    },
+    {
+      "name": "fontSize.sm",
+      "kind": "fontSize",
+      "value": "14px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "text-sm"
+      ]
+    },
+    {
+      "name": "fontSize.base",
+      "kind": "fontSize",
+      "value": "15px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "text-base"
+      ]
+    },
+    {
+      "name": "fontSize.lg",
+      "kind": "fontSize",
+      "value": "18px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "text-lg"
+      ]
+    },
+    {
+      "name": "fontSize.xl",
+      "kind": "fontSize",
+      "value": "22px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "text-xl"
+      ]
+    },
+    {
+      "name": "fontSize.2xl",
+      "kind": "fontSize",
+      "value": "28px",
+      "sourceType": "dtcg",
+      "codeHints": [
+        "text-2xl"
+      ]
+    },
+    {
+      "name": "fontFamily.sans",
+      "kind": "fontFamily",
+      "value": "Inter, system-ui, -apple-system, Segoe UI, sans-serif",
+      "sourceType": "dtcg"
+    },
+    {
+      "name": "fontFamily.mono",
+      "kind": "fontFamily",
+      "value": "ui-monospace, SFMono-Regular, Menlo, monospace",
+      "sourceType": "dtcg"
+    },
+    {
+      "name": "shadow.card",
+      "kind": "shadow",
+      "value": "0 1px 2px rgba(15, 23, 42, 0.06)",
+      "sourceType": "dtcg"
+    },
+    {
+      "name": "shadow.raised",
+      "kind": "shadow",
+      "value": "0 4px 12px rgba(15, 23, 42, 0.08)",
+      "sourceType": "dtcg"
+    },
+    {
+      "name": "shadow.overlay",
+      "kind": "shadow",
+      "value": "0 18px 40px rgba(15, 23, 42, 0.18)",
+      "sourceType": "dtcg"
+    },
+    {
+      "name": "typography.body",
+      "kind": "typography",
+      "value": "{\"fontFamily\":\"Inter\",\"fontWeight\":\"400\",\"fontSize\":\"14px\",\"lineHeight\":\"20px\"}",
+      "sourceType": "dtcg"
+    }
+  ],
+  "components": [
+    {
+      "name": "DataTable",
+      "codeMatches": [
+        "DataTable",
+        "data-table",
+        "data table",
+        "data_table",
+        "dataTable"
+      ],
+      "aliases": [
+        "DataTable",
+        "data-table",
+        "data table",
+        "data_table",
+        "dataTable"
+      ],
+      "summary": "Dense data table for supplier and contract lists. Must use: border-border, text-sm, hover:bg-surface-raised Disallowed: style={{, text-[ States: hover, focus",
+      "requiredPatterns": [
+        "border-border",
+        "text-sm",
+        "hover:bg-surface-raised",
+        "bg-surface-raised"
+      ],
+      "disallowedPatterns": [
+        "style={{",
+        "text-["
+      ],
+      "variants": [],
+      "states": [
+        {
+          "name": "hover"
+        },
+        {
+          "name": "focus"
+        }
+      ],
+      "tokensUsed": [
+        "hint.border-border",
+        "hint.text-sm",
+        "hint.hover-bg-surface-raised",
+        "hint.text"
+      ]
+    },
+    {
+      "name": "StatusBadge",
+      "codeMatches": [
+        "StatusBadge",
+        "status-badge",
+        "status badge",
+        "status_badge",
+        "statusBadge"
+      ],
+      "aliases": [
+        "StatusBadge",
+        "status-badge",
+        "status badge",
+        "status_badge",
+        "statusBadge"
+      ],
+      "summary": "Small pill label for contract and risk states. Must use: rounded-full, text-xs, border Disallowed: style={{ Variants: primary, success, warning, danger, info, neutral",
+      "requiredPatterns": [
+        "rounded-full",
+        "text-xs",
+        "border"
+      ],
+      "disallowedPatterns": [
+        "style={{"
+      ],
+      "variants": [
+        {
+          "name": "primary"
+        },
+        {
+          "name": "success"
+        },
+        {
+          "name": "warning"
+        },
+        {
+          "name": "danger"
+        }
+      ],
+      "states": [],
+      "tokensUsed": [
+        "hint.rounded-full",
+        "hint.text-xs"
+      ]
+    },
+    {
+      "name": "StatCard",
+      "codeMatches": [
+        "StatCard",
+        "stat-card",
+        "stat card",
+        "stat_card",
+        "statCard"
+      ],
+      "aliases": [
+        "StatCard",
+        "stat-card",
+        "stat card",
+        "stat_card",
+        "statCard"
+      ],
+      "summary": "KPI summary card with trend sparkline. Must use: rounded-lg, bg-surface, border-border, shadow-card Disallowed: style={{, bg-[ States: hover",
+      "requiredPatterns": [
+        "rounded-lg",
+        "bg-surface",
+        "border-border",
+        "shadow-card"
+      ],
+      "disallowedPatterns": [
+        "style={{",
+        "bg-["
+      ],
+      "variants": [],
+      "states": [
+        {
+          "name": "hover"
+        }
+      ],
+      "tokensUsed": [
+        "hint.rounded-lg",
+        "hint.bg-surface",
+        "hint.border-border",
+        "hint.shadow-card",
+        "hint.bg"
+      ]
+    },
+    {
+      "name": "AlertBanner",
+      "codeMatches": [
+        "AlertBanner",
+        "alert-banner",
+        "alert banner",
+        "alert_banner",
+        "alertBanner"
+      ],
+      "aliases": [
+        "AlertBanner",
+        "alert-banner",
+        "alert banner",
+        "alert_banner",
+        "alertBanner"
+      ],
+      "summary": "Inline notice for spend, contract, and risk alerts. Must use: rounded-md, border, text-sm Disallowed: style={{",
+      "requiredPatterns": [
+        "rounded-md",
+        "border",
+        "text-sm"
+      ],
+      "disallowedPatterns": [
+        "style={{"
+      ],
+      "variants": [],
+      "states": [],
+      "tokensUsed": [
+        "hint.rounded-md",
+        "hint.text-sm"
+      ]
+    },
+    {
+      "name": "Drawer",
+      "codeMatches": [
+        "Drawer",
+        "drawer"
+      ],
+      "aliases": [
+        "Drawer",
+        "drawer"
+      ],
+      "summary": "Right-side detail panel for contracts and suppliers. Must use: rounded-lg, bg-surface, shadow-overlay Disallowed: style={{ States: focus",
+      "requiredPatterns": [
+        "rounded-lg",
+        "bg-surface",
+        "shadow-overlay"
+      ],
+      "disallowedPatterns": [
+        "style={{"
+      ],
+      "variants": [],
+      "states": [
+        {
+          "name": "focus"
+        }
+      ],
+      "tokensUsed": [
+        "hint.rounded-lg",
+        "hint.bg-surface",
+        "hint.shadow-overlay"
+      ]
+    },
+    {
+      "name": "ChartFrame",
+      "codeMatches": [
+        "ChartFrame",
+        "chart-frame",
+        "chart frame",
+        "chart_frame",
+        "chartFrame"
+      ],
+      "aliases": [
+        "ChartFrame",
+        "chart-frame",
+        "chart frame",
+        "chart_frame",
+        "chartFrame"
+      ],
+      "summary": "Wrapper for token-driven SVG charts. Must use: border-border, rounded-lg, bg-surface Disallowed: style={{, fill=\"",
+      "requiredPatterns": [
+        "border-border",
+        "rounded-lg",
+        "bg-surface"
+      ],
+      "disallowedPatterns": [
+        "style={{",
+        "fill=\""
+      ],
+      "variants": [],
+      "states": [],
+      "tokensUsed": [
+        "hint.border-border",
+        "hint.rounded-lg",
+        "hint.bg-surface"
+      ]
+    }
+  ],
+  "aliasMap": {}
+}

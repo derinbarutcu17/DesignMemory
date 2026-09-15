@@ -174,6 +174,21 @@ test('runAudit uses PR file contents for scan mode contract checks', async () =>
   assert.ok(!latestRun.issues.some((issue) => issue.ruleId === 'component.required-pattern'));
 });
 
+test('runAudit does not apply component contracts to consumer files', async () => {
+  const cwd = makeTempDir();
+  writeConfig(cwd);
+  writeSnapshot(cwd);
+
+  await runAudit({
+    getDiff: () => 'FILE: src/routes/Home.tsx\n+ const changed = <Button>Save</Button>;\n',
+    getFileContent: () => 'import { Button } from "../components/Button";\nexport function Home() { return <Button>Save</Button>; }',
+    exit: (() => undefined as never) as typeof process.exit,
+  }, { cwd, createBaseline: true });
+
+  const latestRun = JSON.parse(fs.readFileSync(path.join(cwd, '.design-memory', 'latest-run.json'), 'utf-8')) as { issues: Array<{ ruleId: string }> };
+  assert.ok(latestRun.issues.every((issue) => !issue.ruleId.startsWith('component.')), 'consumer file has no contract findings');
+});
+
 test('runAudit marks issues as reopened when they return after skipping a run', async () => {
   const cwd = makeTempDir();
   writeConfig(cwd);

@@ -391,6 +391,17 @@ function detectStyleRuleIssues(
   }
 }
 
+function evidenceExcerpt(rawText: string, pattern?: string) {
+  const lines = rawText.split('\n').filter((line) => line.trim().length > 0);
+  if (pattern) {
+    const match = lines.find((line) => line.includes(pattern));
+    if (match) {
+      return match.trim().slice(0, 160);
+    }
+  }
+  return lines.slice(0, 3).join(' ').trim().slice(0, 160) || 'Changed lines in this file.';
+}
+
 function detectComponentContractIssues(
   issues: DriftIssue[],
   snapshot: ReferenceSnapshot,
@@ -399,6 +410,12 @@ function detectComponentContractIssues(
   ctx: FileIssueContext,
 ) {
   for (const mapping of mappings) {
+    // Content-only matches (confidence < 0.86) mean the file merely references
+    // the component, for example an import in a consumer page. Contract rules
+    // apply to the component's own file, not to its call sites.
+    if (mapping.confidence < 0.86) {
+      continue;
+    }
     const component = snapshot.components[mapping.referenceIndex];
 
     for (const pattern of component.disallowedPatterns ?? []) {
@@ -409,7 +426,7 @@ function detectComponentContractIssues(
           filePath: ctx.file.filePath,
           expected: `Avoid disallowed pattern ${pattern} for ${component.name}.`,
           found: pattern,
-          evidenceSnippet: ctx.rawText,
+          evidenceSnippet: evidenceExcerpt(ctx.rawText, pattern),
           suggestedAction: `Remove or replace ${pattern} with the approved pattern for ${component.name}.`,
         }));
       }
@@ -423,7 +440,7 @@ function detectComponentContractIssues(
           filePath: ctx.file.filePath,
           expected: `Include required pattern ${pattern} for ${component.name} somewhere in the file.`,
           found: 'Pattern missing from the evaluated file content.',
-          evidenceSnippet: ctx.rawText,
+          evidenceSnippet: evidenceExcerpt(ctx.rawText),
           suggestedAction: `Add the required pattern ${pattern} or align the component with the reference snapshot.`,
           confidence: 0.87,
         }));
@@ -441,7 +458,7 @@ function detectComponentContractIssues(
           filePath: ctx.file.filePath,
           expected: `Provide explicit ${state.name} state support for ${component.name}.`,
           found: `${state.name} state not found in the evaluated file content.`,
-          evidenceSnippet: ctx.rawText,
+          evidenceSnippet: evidenceExcerpt(ctx.rawText),
           suggestedAction: `Add the ${state.name} state styling/behavior expected by the reference snapshot.`,
           confidence: 0.82,
         }));
@@ -457,7 +474,7 @@ function detectComponentContractIssues(
           filePath: ctx.file.filePath,
           expected: `Use approved ${component.name} variants from the reference snapshot.`,
           found: 'Changed code references variants that do not match the approved variant set.',
-          evidenceSnippet: ctx.rawText,
+          evidenceSnippet: evidenceExcerpt(ctx.rawText),
           suggestedAction: `Align the variant values with the approved ${component.name} variants.`,
           confidence: 0.74,
         }));
@@ -492,7 +509,7 @@ function detectTokenMismatchIssues(
           filePath: ctx.file.filePath,
           expected: `Use approved token ${matcher.token.name} for ${component.name}.`,
           found: 'Changed code does not reference any approved token aliases or code hints.',
-          evidenceSnippet: ctx.rawText,
+          evidenceSnippet: evidenceExcerpt(ctx.rawText),
           suggestedAction: `Replace hardcoded values with ${matcher.token.codeHints?.[0] ?? matcher.token.name} (token ${matcher.token.name}).`,
           confidence: 0.8,
         }));

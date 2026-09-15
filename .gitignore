@@ -43,3 +43,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 TEST*.md
+
+# demo app
+apps/procure-dash/node_modules/
+apps/procure-dash/dist/

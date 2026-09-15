@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "decisions": [
+    {
+      "id": "dec_a918438042dc",
+      "kind": "exception",
+      "status": "active",
+      "ruleId": "color.raw-hex",
+      "target": {
+        "glob": "src/ui/SupplierMark.tsx"
+      },
+      "reason": "Vendor brand marks use their official palette so partner logos stay recognizable in dense tables.",
+      "author": "human:derin",
+      "createdAt": "2026-09-15T15:20:24.558Z",
+      "updatedAt": "2026-09-15T15:20:24.558Z",
+      "fingerprint": "884c550b9f26"
+    },
+    {
+      "id": "dec_a67d5e5c7120",
+      "kind": "intentional",
+      "status": "active",
+      "ruleId": "tailwind.arbitrary-font-size",
+      "target": {
+        "file": "src/ui/DataTable.tsx",
+        "value": "13px"
+      },
+      "reason": "Dense numeric columns use a 13px step for scanability across 24 supplier rows, reviewed by design.",
+      "author": "human:derin",
+      "createdAt": "2026-09-15T15:20:24.561Z",
+      "updatedAt": "2026-09-15T15:20:24.561Z",
+      "expiresAt": "2027-03-14T15:20:24.555Z",
+      "tokenRefs": [
+        {
+          "path": "fontSize.sm",
+          "valueAtCreation": "14px"
+        }
+      ],
+      "fingerprint": "d5e01d550cf6"
+    },
+    {
+      "id": "dec_a845743b7dd3",
+      "kind": "decision",
+      "status": "active",
+      "ruleId": "component.variant-drift",
+      "target": {
+        "component": "StatusBadge"
+      },
+      "reason": "Risk levels are fixed to three tiers by procurement policy, so extra badge variants stay out of scope.",
+      "author": "human:derin",
+      "createdAt": "2026-09-15T15:20:24.562Z",
+      "updatedAt": "2026-09-15T15:20:24.562Z",
+      "fingerprint": "d296057cf85a"
+    }
+  ]
+}
