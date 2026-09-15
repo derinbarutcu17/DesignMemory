@@ -33,6 +33,7 @@ export type AuditRequestOptions = {
   range?: string;
   files?: string[];
   persist?: boolean;
+  createBaseline?: boolean;
   maxFindings?: number;
 };
 
@@ -185,6 +186,7 @@ export async function runAuditRequest(options: AuditRequestOptions = {}): Promis
       mode,
       ...(prScan ? { prScan } : {}),
       persist: options.persist ?? false,
+      ...(options.createBaseline ? { createBaseline: true } : {}),
     },
   );
 

@@ -2,12 +2,12 @@
   "metadata": {
     "source": "dtcg+design-md",
     "versionLabel": "tokens.json",
-    "importedAt": "2026-09-15T15:22:47.282Z",
+    "importedAt": "2026-09-15T15:24:51.324Z",
     "fileName": "tokens.json",
     "tokenCount": 36,
     "componentCount": 6,
     "variantCount": 4,
-    "stateCount": 4
+    "stateCount": 3
   },
   "tokens": [
     {
@@ -374,7 +374,7 @@
         "data_table",
         "dataTable"
       ],
-      "summary": "Dense data table for supplier and contract lists. Must use: border-border, text-sm, hover:bg-surface-raised Disallowed: style={{, text-[ States: hover, focus",
+      "summary": "Dense data table for supplier and contract lists. Must use: border-border, text-sm, hover:bg-surface-raised Disallowed: style={{ States: hover",
       "requiredPatterns": [
         "border-border",
         "text-sm",
@@ -382,23 +382,18 @@
         "bg-surface-raised"
       ],
       "disallowedPatterns": [
-        "style={{",
-        "text-["
+        "style={{"
       ],
       "variants": [],
       "states": [
         {
           "name": "hover"
-        },
-        {
-          "name": "focus"
         }
       ],
       "tokensUsed": [
         "hint.border-border",
         "hint.text-sm",
-        "hint.hover-bg-surface-raised",
-        "hint.text"
+        "hint.hover-bg-surface-raised"
       ]
     },
     {

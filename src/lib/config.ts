@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
+import { DesignMemoryError } from './errors';
 import { DEFAULT_PROVIDER_PREFERENCE } from './policy';
 
 const ruleSeveritySchema = z.enum(['error', 'warn', 'ignore']);
@@ -127,8 +128,24 @@ export function readConfig(cwd = process.cwd()): DesignMemoryConfig {
     return DEFAULT_CONFIG;
   }
 
-  const raw = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-  return designMemoryConfigSchema.parse(raw);
+  let raw: unknown;
+  try {
+    raw = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  } catch (error) {
+    throw new DesignMemoryError('DM_E_NO_CONFIG', `design-memory.config.json in ${cwd} is not valid JSON.`, {
+      hint: 'Fix the JSON syntax or run design-memory init to regenerate the default config.',
+      cause: error,
+    });
+  }
+
+  try {
+    return designMemoryConfigSchema.parse(raw);
+  } catch (error) {
+    throw new DesignMemoryError('DM_E_NO_CONFIG', `design-memory.config.json in ${cwd} failed validation.`, {
+      hint: 'Compare the file against the default config from design-memory init.',
+      cause: error,
+    });
+  }
 }
 
 export function writeDefaultConfig(cwd = process.cwd()) {

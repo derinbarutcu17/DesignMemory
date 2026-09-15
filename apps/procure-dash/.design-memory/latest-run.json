@@ -1,0 +1,195 @@
+{
+  "id": "run_d39445bc",
+  "status": "completed",
+  "summary": {
+    "totalIssues": 2,
+    "error": 2,
+    "warn": 0,
+    "byType": {
+      "hardcoded-style": 2
+    },
+    "byStatus": {
+      "new": 2
+    },
+    "resolvedCount": 0,
+    "remainingCount": 0
+  },
+  "filesAnalyzed": [
+    "src/legacy/SupplierRiskNote.tsx",
+    "src/routes/Contracts.tsx",
+    "src/routes/Overview.tsx",
+    "src/routes/Suppliers.tsx",
+    "src/ui/AlertBanner.tsx",
+    "src/ui/Badge.tsx",
+    "src/ui/Button.tsx",
+    "src/ui/Card.tsx",
+    "src/ui/CategoryBars.tsx",
+    "src/ui/ChartFrame.tsx",
+    "src/ui/DataTable.tsx",
+    "src/ui/DonutChart.tsx",
+    "src/ui/Drawer.tsx",
+    "src/ui/EmptyState.tsx",
+    "src/ui/ErrorState.tsx",
+    "src/ui/Pagination.tsx",
+    "src/ui/RiskMeter.tsx",
+    "src/ui/SearchInput.tsx",
+    "src/ui/Select.tsx",
+    "src/ui/Skeleton.tsx",
+    "src/ui/Sparkline.tsx",
+    "src/ui/StatCard.tsx",
+    "src/ui/StatusBadge.tsx",
+    "src/ui/SupplierMark.tsx",
+    "src/ui/Tabs.tsx"
+  ],
+  "matchedComponents": [
+    {
+      "filePath": "src/ui/AlertBanner.tsx",
+      "componentName": "AlertBanner",
+      "confidence": 0.98,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/ui/ChartFrame.tsx",
+      "componentName": "ChartFrame",
+      "confidence": 0.98,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/ui/DataTable.tsx",
+      "componentName": "DataTable",
+      "confidence": 0.98,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/ui/Drawer.tsx",
+      "componentName": "Drawer",
+      "confidence": 0.98,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/ui/StatCard.tsx",
+      "componentName": "StatCard",
+      "confidence": 0.98,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/ui/StatusBadge.tsx",
+      "componentName": "StatusBadge",
+      "confidence": 0.98,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/ui/Badge.tsx",
+      "componentName": "StatusBadge",
+      "confidence": 0.86,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/ui/Card.tsx",
+      "componentName": "StatCard",
+      "confidence": 0.86,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/routes/Contracts.tsx",
+      "componentName": "DataTable",
+      "confidence": 0.72,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/routes/Contracts.tsx",
+      "componentName": "StatusBadge",
+      "confidence": 0.72,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/routes/Contracts.tsx",
+      "componentName": "Drawer",
+      "confidence": 0.72,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/routes/Overview.tsx",
+      "componentName": "DataTable",
+      "confidence": 0.72,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/routes/Overview.tsx",
+      "componentName": "StatCard",
+      "confidence": 0.72,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/routes/Overview.tsx",
+      "componentName": "AlertBanner",
+      "confidence": 0.72,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/routes/Overview.tsx",
+      "componentName": "ChartFrame",
+      "confidence": 0.72,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/routes/Suppliers.tsx",
+      "componentName": "DataTable",
+      "confidence": 0.72,
+      "detectionSource": "deterministic"
+    },
+    {
+      "filePath": "src/routes/Suppliers.tsx",
+      "componentName": "StatusBadge",
+      "confidence": 0.72,
+      "detectionSource": "deterministic"
+    }
+  ],
+  "issues": [
+    {
+      "fingerprint": "15f4d85f9443",
+      "ruleId": "tailwind.arbitrary-spacing",
+      "issueType": "hardcoded-style",
+      "severity": "error",
+      "confidence": 0.98,
+      "componentName": "SupplierRiskNote",
+      "filePath": "src/legacy/SupplierRiskNote.tsx",
+      "expected": "Use token-backed spacing classes instead of arbitrary spacing values.",
+      "found": "p-[7px]",
+      "evidenceSnippet": "p-[7px]",
+      "suggestedAction": "Replace p-[7px] with p-2 (token spacing.2)",
+      "detectionSource": "deterministic",
+      "status": "new",
+      "line": 3,
+      "column": 22
+    },
+    {
+      "fingerprint": "a86390b3bdf7",
+      "ruleId": "color.raw-hex",
+      "issueType": "hardcoded-style",
+      "severity": "error",
+      "confidence": 0.98,
+      "componentName": "SupplierRiskNote",
+      "filePath": "src/legacy/SupplierRiskNote.tsx",
+      "expected": "Use approved color tokens from the reference snapshot.",
+      "found": "text-[#334155]",
+      "evidenceSnippet": "text-[#334155]",
+      "suggestedAction": "Replace text-[#334155] with bg-primary-hover (token color.primaryHover)",
+      "detectionSource": "deterministic",
+      "status": "new",
+      "line": 4,
+      "column": 20
+    }
+  ],
+  "warnings": [],
+  "comparison": {
+    "resolvedFingerprints": [],
+    "remainingFingerprints": [],
+    "newFingerprints": [
+      "15f4d85f9443",
+      "a86390b3bdf7"
+    ],
+    "reopenedFingerprints": []
+  },
+  "createdAt": "2026-09-15T15:24:51.670Z"
+}

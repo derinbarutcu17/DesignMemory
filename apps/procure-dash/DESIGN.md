@@ -53,9 +53,9 @@ Dense data table for supplier and contract lists.
 
 Must use: `border-border`, `text-sm`, `hover:bg-surface-raised`
 
-Disallowed: `style={{`, `text-[`
+Disallowed: `style={{`
 
-States: hover, focus
+States: hover
 
 ### StatusBadge
 
