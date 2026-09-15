@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { --bg:#0b0f14; --fg:#e6edf3; --muted:#94a3b8; --line:#1e293b; --card:#111827; --red:#b91c1c; --green:#15803d; --accent:#1d4ed8; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:1600px; height:900px; background:var(--bg); color:var(--fg); font-family:Inter,system-ui,sans-serif; padding:56px 64px; }
+  h1 { font-size:30px; font-weight:600; letter-spacing:-0.02em; }
+  .sub { color:var(--muted); font-size:15px; margin-top:8px; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-top:36px; }
+  .col h2 { font-size:13px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:12px; }
+  .col.bad h2 { color:#fca5a5; } .col.good h2 { color:#86efac; }
+  pre { background:#0f172a; border:1px solid var(--line); border-radius:10px; padding:18px 20px; font-family:ui-monospace,Menlo,monospace; font-size:13.5px; line-height:1.75; }
+  .bad pre { border-color:#7f1d1d; } .good pre { border-color:#14532d; }
+  .r { color:#fca5a5; } .g { color:#86efac; } .m { color:var(--muted); } .a { color:#93c5fd; }
+  .verdict { margin-top:24px; border-radius:10px; padding:16px 20px; font-size:14px; }
+  .verdict.bad { border:1px solid #7f1d1d; background:#1c0f0f; color:#fecaca; }
+  .verdict.good { border:1px solid #14532d; background:#0d1a12; color:#bbf7d0; }
+  .swatches { display:flex; gap:10px; margin-top:18px; }
+  .sw { width:56px; height:56px; border-radius:8px; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-family:ui-monospace,Menlo,monospace; }
+  .note { margin-top:26px; font-size:13px; color:var(--muted); }
+  .code { font-family:ui-monospace,Menlo,monospace; color:#cbd5e1; }
+</style>
+</head>
+<body>
+  <h1>What drift looks like</h1>
+  <div class="sub">The same agent edit, before and after the gate. Both snippets are real bake-test fixtures.</div>
+
+  <div class="cols">
+    <div class="col bad">
+      <h2>Agent output that blocks</h2>
+      <pre><span class="m">// src/ui/DataTable.tsx</span>
+&lt;div className=<span class="r">"overflow-x-auto rounded-md border
+  border-border bg-surface <span style="background:#7f1d1d">text-[#0f766e]</span>"</span>&gt;
+  ...
+&lt;/div&gt;
+
+<span class="m">$ design-memory audit</span>
+<span class="r">&#10007; color.raw-hex</span>  src/ui/DataTable.tsx:16
+  found  <span class="r">text-[#0f766e]</span>
+  fix    Replace text-[#0f766e] with
+         <span class="g">text-info</span> (token color.info)</pre>
+      <div class="swatches">
+        <div class="sw" style="background:#0f766e">#0f766e</div>
+        <div class="sw" style="background:#0e7490">#0e7490</div>
+      </div>
+      <div class="note">The agent's teal is close to <span class="code">#0e7490</span> but is not a system token. Two colors, one visually plausible, and only the system's survives review.</div>
+      <div class="verdict bad">Verdict: blocked (exit 1), with the exact replacement named.</div>
+    </div>
+
+    <div class="col good">
+      <h2>After MCP-assisted repair</h2>
+      <pre><span class="m">// src/ui/DataTable.tsx</span>
+&lt;div className=<span class="g">"overflow-x-auto rounded-md border
+  border-border bg-surface <span style="background:#14532d">text-info</span>"</span>&gt;
+  ...
+&lt;/div&gt;
+
+<span class="m">$ design-memory audit</span>
+<span class="g">&#10003; No design-system drift found.</span>
+  exit 0</pre>
+      <div class="swatches">
+        <div class="sw" style="background:#0e7490">text-info</div>
+      </div>
+      <div class="note">The repair came from <span class="code">dm_suggest_token</span>, not from the agent's own palette guess. Deterministic, explainable, repeatable.</div>
+      <div class="verdict good">Verdict: clean pass, no exceptions needed.</div>
+    </div>
+  </div>
+</body>
+</html>

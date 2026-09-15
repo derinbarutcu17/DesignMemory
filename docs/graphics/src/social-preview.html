@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { --bg:#0b0f14; --fg:#e6edf3; --muted:#94a3b8; --line:#1e293b; --accent:#1d4ed8; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:1280px; height:640px; background:var(--bg); color:var(--fg); font-family:Inter,system-ui,sans-serif; padding:56px 64px; display:flex; flex-direction:column; }
+  h1 { font-size:42px; font-weight:650; letter-spacing:-0.03em; }
+  .pitch { font-size:19px; color:var(--muted); margin-top:14px; max-width:880px; line-height:1.5; }
+  .code { margin-top:32px; background:#0f172a; border:1px solid var(--line); border-radius:10px; padding:18px 22px; font-family:ui-monospace,Menlo,monospace; font-size:15px; line-height:1.7; width:760px; }
+  .r { color:#fca5a5; } .g { color:#86efac; } .m { color:var(--muted); } .a { color:#93c5fd; }
+  .footer { margin-top:auto; display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:15px; }
+  .badge { border:1px solid var(--line); border-radius:999px; padding:6px 14px; font-size:13px; color:#cbd5e1; }
+</style>
+</head>
+<body>
+  <h1>Design Memory</h1>
+  <div class="pitch">The deterministic memory and guardrail layer between your design system and the agents writing your frontend.</div>
+
+  <div class="code">
+    <span class="m">agent writes</span>  <span class="r">text-[#0f766e]</span><br />
+    <span class="m">gate returns</span>  <span class="a">Replace with text-info (token color.info)</span><br />
+    <span class="m">memory keeps</span> <span class="g">decisions with reasons, expiry, and token dependencies</span>
+  </div>
+
+  <div class="footer">
+    <span>Net-new-only enforcement &#183; MCP for agents &#183; local-first, no cloud</span>
+    <span class="badge">github.com/derinbarutcu17/DesignMemory</span>
+  </div>
+</body>
+</html>

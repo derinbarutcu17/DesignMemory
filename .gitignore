@@ -47,3 +47,8 @@ TEST*.md
 # demo app
 apps/procure-dash/node_modules/
 apps/procure-dash/dist/
+
+# video pipeline
+docs/video/motion/bundle.js
+docs/video/frames/frame-*.jpg
+docs/video/*-raw.mp4

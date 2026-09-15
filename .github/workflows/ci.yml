@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [20, 22]
       fail-fast: false
 
     steps:
@@ -28,6 +28,9 @@ jobs:
         run: npm ci
 
       - name: Type-check
+        run: npm run typecheck
+
+      - name: Build
         run: npm run build
 
       - name: Lint
@@ -35,3 +38,14 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: MCP protocol tests
+        run: npm run test:mcp
+
+      - name: Bake scenarios
+        run: npm run bake
+
+      - name: Package smoke test
+        run: |
+          npm pack --dry-run 2>&1 | tee pack.txt
+          node -e "const out=require('fs').readFileSync('pack.txt','utf8'); if (out.includes('bake/') || out.includes('apps/')) { console.error('package must not include bake/ or apps/'); process.exit(1); }"

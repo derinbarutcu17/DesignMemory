@@ -64,21 +64,20 @@ function scoreToken(token: ReferenceToken, target: string, targetNum: RegExpMatc
 
     let score = 0;
     const candNum = normalized.match(/^(\d+(?:\.\d+)?)/);
-    if (targetNum && candNum) {
+    const candRgb = hexToRgb(candidate);
+
+    if (targetRgb && candRgb) {
+      const distance =
+        Math.abs(targetRgb[0] - candRgb[0]) +
+        Math.abs(targetRgb[1] - candRgb[1]) +
+        Math.abs(targetRgb[2] - candRgb[2]);
+      score = 1 - distance / 765;
+    } else if (targetNum && candNum && !targetRgb && !candRgb) {
+      // Numeric proximity only for genuine numeric values (13px vs 12px).
+      // Hex strings can start with a digit, so they never take this path.
       const a = Number(targetNum[1]);
       const b = Number(candNum[1]);
       score = 1 - Math.abs(a - b) / Math.max(a, b, 1);
-    }
-
-    if (targetRgb) {
-      const candRgb = hexToRgb(candidate);
-      if (candRgb) {
-        const distance =
-          Math.abs(targetRgb[0] - candRgb[0]) +
-          Math.abs(targetRgb[1] - candRgb[1]) +
-          Math.abs(targetRgb[2] - candRgb[2]);
-        score = Math.max(score, 1 - distance / 765);
-      }
     }
 
     if (score === 0 && (normalized.startsWith(target) || target.startsWith(normalized))) {

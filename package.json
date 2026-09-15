@@ -22,20 +22,29 @@
     "gates": "npm run typecheck && npm run lint && npm run build && npm test && npm run test:mcp && npm run bake",
     "demo:app": "npm --prefix apps/procure-dash run dev",
     "demo:app:build": "npm --prefix apps/procure-dash run build",
+    "graphics": "node --import tsx scripts/render-graphics.ts",
+    "shots": "node --import tsx scripts/render-app-shots.ts",
+    "video:build": "esbuild docs/video/motion/src/main.tsx --bundle --outfile=docs/video/motion/bundle.js --format=iife --loader:.tsx=tsx --jsx=automatic --define:process.env.NODE_ENV='\"production\"' --minify",
+    "video": "npm run video:build && node --import tsx scripts/render-video.ts",
     "demo:design-memory:audit": "bash examples/design-memory-showcase/scripts/demo.sh",
     "prepack": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^4.3.6",
     "commander": "^12.0.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
-    "@types/node": "^20",
     "eslint": "^9",
+    "motion": "^13.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "tsx": "^4.21.0"
   },
   "license": "MIT",
@@ -45,7 +54,6 @@
   "files": [
     "dist",
     "README.md",
-    "agent-plugin.json",
-    "mcp.json"
+    "agent-plugin.json"
   ]
 }

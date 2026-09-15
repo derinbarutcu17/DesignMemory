@@ -1,0 +1,13 @@
+diff --git a/apps/procure-dash/src/ui/DataTable.tsx b/apps/procure-dash/src/ui/DataTable.tsx
+index 5d0ab86..d5312b4 100644
+--- a/apps/procure-dash/src/ui/DataTable.tsx
++++ b/apps/procure-dash/src/ui/DataTable.tsx
+@@ -13,7 +13,7 @@ export function DataToolbar({ children, className }: { children: ReactNode; clas
+ 
+ export function DataTable({ columns, children, className }: { columns: TableColumn[]; children: ReactNode; className?: string }) {
+   return (
+-    <div className={cn('overflow-x-auto rounded-md border border-border bg-surface', className)}>
++    <div className={cn('overflow-x-auto rounded-md border border-border bg-surface text-[#0f766e]', className)}>
+       <table className="w-full border-collapse text-sm">
+         <thead>
+           <tr className="border-b border-border">

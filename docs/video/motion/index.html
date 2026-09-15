@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Design Memory motion</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0f14; width: 1920px; height: 1080px; overflow: hidden; }
+  #root { width: 1920px; height: 1080px; }
+  * { box-sizing: border-box; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    (function () {
+      window.__ready = true;
+      function loop() {
+        window.dispatchEvent(new CustomEvent('dm-tick', { detail: performance.now() }));
+        window.requestAnimationFrame(loop);
+      }
+      window.requestAnimationFrame(loop);
+    })();
+  </script>
+  <script src="./bundle.js"></script>
+</body>
+</html>

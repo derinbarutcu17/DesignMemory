@@ -1,16 +1,24 @@
 {
-  "name": "design_memory_audit",
-  "description": "Runs the net-new-only design drift audit against the synced reference snapshot for the repository. Blocks only new or reopened drift (baseline + review memory applied). Exit codes: 0 = clean, 1 = drift found, 2 = no reference snapshot (run sync-reference first). For the agent loop use the CLI directly: `design-memory audit --json` emits the full AuditRun document (issues with line/col and suggested fixes, warnings) as the only stdout content.",
-  "inputs": {
-    "type": "object",
-    "properties": {
-      "cwd": {
-        "type": "string",
-        "description": "Absolute repository path to audit."
-      }
-    },
-    "required": ["cwd"],
-    "additionalProperties": false
-  },
-  "execution": "node dist/cli/index.js audit --cwd ${cwd}"
+  "name": "design-memory",
+  "command": "npx -y @derinb/design-memory mcp",
+  "localCommand": "node dist/cli/index.js mcp",
+  "description": "Design Memory MCP server: design tokens, component contracts, decision memory, and net-new drift audits for coding agents.",
+  "tools": [
+    "dm_get_context",
+    "dm_audit_diff",
+    "dm_suggest_token",
+    "dm_record_decision",
+    "dm_get_decisions",
+    "dm_get_tokens",
+    "dm_get_contract"
+  ],
+  "resources": [
+    "dm://tokens",
+    "dm://design-md",
+    "dm://rules",
+    "dm://contracts",
+    "dm://decisions",
+    "dm://config"
+  ],
+  "prompts": ["dm/implement-component", "dm/fix-drift", "dm/review-drift"]
 }

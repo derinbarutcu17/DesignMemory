@@ -1,33 +1,32 @@
 import type { ContractState, RiskLevel, Supplier } from './types';
 
-const NAMES = [
-  'Stahlwerke Ostwald GmbH',
-  'Vogelsang Logistik AG',
-  'Meier Elektronik KG',
-  'Nordwind Verpackung GmbH',
-  'Kraftwerk Rheinland AG',
-  'Baumann Werkzeuge GmbH',
-  'Hansa Guss AG',
-  'Delta Blechverarbeitung GmbH',
-  'Alpenrohr Leitungen AG',
-  'Wertheim Kunststoffe GmbH',
-  'Silbermann Kabelwerke AG',
-  'Morgenstern MRO Handels GmbH',
-  'Elbtal Fracht GmbH',
-  'Ruhrmann Energie AG',
-  'Weissgerber Komponenten KG',
-  'Falkenberg Maritime GmbH',
-  'Oderbruch Logistik AG',
-  'Sonneberg Praezision GmbH',
-  'Handelshaus Weinstadt GmbH',
-  'Lindqvist Industries AB',
-  'Castellano Aceros SL',
-  'Vosges Mecanique SAS',
-  'Pomerania Steel Sp. z o.o.',
-  'Brenner Kunststoffwerk GmbH',
+const NAMES: Array<{ name: string; category: string }> = [
+  { name: 'Stahlwerke Ostwald GmbH', category: 'Steel castings' },
+  { name: 'Vogelsang Logistik AG', category: 'Logistics' },
+  { name: 'Meier Elektronik KG', category: 'Electronics' },
+  { name: 'Nordwind Verpackung GmbH', category: 'Packaging' },
+  { name: 'Kraftwerk Rheinland AG', category: 'Energy contracts' },
+  { name: 'Baumann Werkzeuge GmbH', category: 'MRO supplies' },
+  { name: 'Hansa Guss AG', category: 'Steel castings' },
+  { name: 'Delta Blechverarbeitung GmbH', category: 'Steel castings' },
+  { name: 'Alpenrohr Leitungen AG', category: 'Steel castings' },
+  { name: 'Wertheim Kunststoffe GmbH', category: 'Packaging' },
+  { name: 'Silbermann Kabelwerke AG', category: 'Electronics' },
+  { name: 'Morgenstern MRO Handels GmbH', category: 'MRO supplies' },
+  { name: 'Elbtal Fracht GmbH', category: 'Logistics' },
+  { name: 'Ruhrmann Energie AG', category: 'Energy contracts' },
+  { name: 'Weissgerber Komponenten KG', category: 'Electronics' },
+  { name: 'Falkenberg Maritime GmbH', category: 'Logistics' },
+  { name: 'Oderbruch Logistik AG', category: 'Logistics' },
+  { name: 'Sonneberg Praezision GmbH', category: 'MRO supplies' },
+  { name: 'Handelshaus Weinstadt GmbH', category: 'MRO supplies' },
+  { name: 'Lindqvist Industries AB', category: 'Steel castings' },
+  { name: 'Castellano Aceros SL', category: 'Steel castings' },
+  { name: 'Vosges Mecanique SAS', category: 'MRO supplies' },
+  { name: 'Pomerania Steel Sp. z o.o.', category: 'Steel castings' },
+  { name: 'Brenner Kunststoffwerk GmbH', category: 'Packaging' },
 ];
 
-const CATEGORIES = ['Steel castings', 'Logistics', 'Electronics', 'MRO supplies', 'Packaging', 'Energy contracts'];
 const COUNTRIES = ['DE', 'DE', 'DE', 'DE', 'AT', 'DE', 'PL', 'DE', 'SE', 'ES', 'FR', 'PL'];
 const OWNERS = ['A. Keller', 'M. Braun', 'S. Fischer', 'T. Wagner', 'L. Hoffmann', 'J. Meister'];
 const STATES: ContractState[] = ['active', 'renewal', 'expiring', 'expired'];
@@ -48,13 +47,13 @@ function riskFor(index: number): { score: number; level: RiskLevel } {
   return { score, level: 'healthy' };
 }
 
-export const suppliers: Supplier[] = NAMES.map((name, index) => {
+export const suppliers: Supplier[] = NAMES.map((entry, index) => {
   const risk = riskFor(index);
   const spend = Math.round((620000 + hash(index, 3) * 4200000) / 1000) * 1000;
   return {
     id: `sup-${String(index + 1).padStart(3, '0')}`,
-    name,
-    category: CATEGORIES[index % CATEGORIES.length],
+    name: entry.name,
+    category: entry.category,
     country: COUNTRIES[index % COUNTRIES.length],
     spendEur: spend,
     savingsEur: Math.round((spend * (0.02 + hash(index, 11) * 0.09)) / 1000) * 1000,

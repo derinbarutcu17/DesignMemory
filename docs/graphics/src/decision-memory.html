@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { --bg:#0b0f14; --fg:#e6edf3; --muted:#94a3b8; --line:#1e293b; --card:#111827; --accent:#1d4ed8; --amber:#b45309; --green:#15803d; --red:#b91c1c; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:1600px; height:900px; background:var(--bg); color:var(--fg); font-family:Inter,system-ui,sans-serif; padding:56px 64px; }
+  h1 { font-size:30px; font-weight:600; letter-spacing:-0.02em; }
+  .sub { color:var(--muted); font-size:15px; margin-top:8px; }
+  .layout { display:grid; grid-template-columns:1.05fr 1fr; gap:32px; margin-top:36px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:22px 24px; }
+  .k { font-family:ui-monospace,Menlo,monospace; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
+  .v { font-size:15px; margin-top:6px; }
+  .badge { display:inline-block; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:600; }
+  .b-int { background:#14532d; color:#bbf7d0; } .b-warn { background:#451a03; color:#fde68a; } .b-inv { background:#450a0a; color:#fecaca; }
+  .timeline { margin-top:22px; border-left:2px solid var(--line); padding-left:20px; }
+  .event { position:relative; padding-bottom:20px; }
+  .event:before { content:""; position:absolute; left:-27px; top:4px; width:12px; height:12px; border-radius:999px; background:var(--accent); border:2px solid var(--bg); }
+  .event.g:before { background:var(--green); } .event.r:before { background:var(--red); } .event.a:before { background:var(--amber); }
+  .event h3 { font-size:14px; } .event p { font-size:13px; color:var(--muted); margin-top:4px; line-height:1.5; }
+  .lookup { margin-top:8px; }
+  .lookup table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  .lookup td { border-bottom:1px solid var(--line); padding:9px 6px; vertical-align:top; }
+  .lookup td:first-child { font-family:ui-monospace,Menlo,monospace; color:#93c5fd; white-space:nowrap; }
+  .m { color:var(--muted); font-family:ui-monospace,Menlo,monospace; font-size:12.5px; }
+</style>
+</head>
+<body>
+  <h1>Decision memory</h1>
+  <div class="sub">Accepted drift becomes retrievable context with a lifecycle, not a silenced warning.</div>
+
+  <div class="layout">
+    <div class="card">
+      <span class="k">decision</span>
+      <div class="v" style="margin-top:8px;"><span class="badge b-int">ACTIVE</span> <span class="m" style="margin-left:8px">dec_8c0fb886c366</span></div>
+      <div class="v" style="margin-top:14px;"><strong>Target</strong> <span class="m">file src/ui/DataTable.tsx · value 13px</span></div>
+      <div class="v" style="margin-top:6px;"><strong>Rule</strong> <span class="m">tailwind.arbitrary-font-size</span></div>
+      <div class="v" style="margin-top:6px;"><strong>Reason</strong> Dense numeric columns use a 13px step for scanability across supplier rows, reviewed by design.</div>
+      <div class="v" style="margin-top:6px;"><strong>Expires</strong> <span class="m">2027-03-14 (180 days)</span></div>
+      <div class="v" style="margin-top:6px;"><strong>Token dependency</strong> <span class="m">fontSize.sm = 14px at creation</span></div>
+
+      <div class="timeline">
+        <div class="event g"><h3>Created</h3><p>Finding stops blocking; <span class="m">suppressesNow: 1</span>.</p></div>
+        <div class="event g"><h3>Retrieved by agents</h3><p>Every <span class="m">dm_get_context</span> on this file returns the reason, so the next agent does not re-litigate it.</p></div>
+        <div class="event r"><h3>Invalidated automatically</h3><p>The team changes <span class="m">fontSize.sm</span> to 15px. The dependency no longer matches; the decision invalidates and the finding blocks again until re-reviewed.</p></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card lookup">
+        <span class="k">deterministic precedence</span>
+        <table>
+          <tr><td>fingerprint</td><td>Exact finding identity (migrated reviews). Highest priority.</td></tr>
+          <tr><td>file + value</td><td>This exact value in this exact file.</td></tr>
+          <tr><td>value</td><td>This value anywhere in the repo.</td></tr>
+          <tr><td>file</td><td>Any matching finding in the file.</td></tr>
+          <tr><td>component</td><td>Findings attributed to the component.</td></tr>
+          <tr><td>glob</td><td>Directory-scoped policy, for example vendor assets.</td></tr>
+          <tr><td>token path</td><td>Findings whose suggestion names the token.</td></tr>
+        </table>
+      </div>
+      <div class="card" style="margin-top:22px;">
+        <span class="k">statuses</span>
+        <div class="v" style="margin-top:10px;">
+          <span class="badge b-int" style="margin-right:8px;">active</span>
+          <span class="badge b-warn" style="margin-right:8px;">expired</span>
+          <span class="badge b-inv" style="margin-right:8px;">invalidated</span>
+          <span class="badge" style="background:#1e293b;color:#cbd5e1;">superseded</span>
+        </div>
+        <p style="font-size:13.5px;color:var(--muted);margin-top:12px;line-height:1.6;">Expired, invalidated, and superseded decisions never suppress. Supersede chains are validated: you can only replace the head, and the replacement inherits the audit trail. The append-only <span class="m">decisions.log.jsonl</span> can rebuild a corrupt store (<span class="m">memory repair</span>).</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

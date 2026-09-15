@@ -3,113 +3,110 @@
 [![CI](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml/badge.svg)](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@derinb/design-memory)](https://www.npmjs.com/package/@derinb/design-memory)
 
-**Design Memory blocks design drift in AI-written frontend code. Deterministic, local-first, DTCG-native.**
+**The deterministic memory and guardrail layer between your design system and the agents writing your frontend.**
 
-It sits between your design truth (Figma → tokens.json → DESIGN.md → Tailwind `@theme`) and the agents writing code, blocking net-new drift before a human ever reviews it. No telemetry, no cloud, no LLM required — a CLI, a pre-commit hook, a GitHub Action, and a JSON contract your agent loop can parse.
+Design Memory sits between your design truth (Figma → `tokens.json` → `DESIGN.md` → Tailwind `@theme`) and the coding agents. It blocks net-new drift before a human ever reviews it, and it gives agents the context they need before they write: tokens, component contracts, and previous decisions, over MCP. Deterministic, local-first, DTCG-native. No telemetry, no cloud, no LLM in the gate.
 
 ## The problem
 
-- **The 80% problem.** Roughly 80% of UI code is now AI-written, and agents happily invent colors, spacing, and component patterns. Design reviews have become "catch what the agent broke" — the [Builder.io framing](https://www.builder.io/blog/ai-design-systems) of making the wrong path fail mechanically is the only thing that scales.
-- **Five design systems.** Every agent session re-derives your design system from context, so the same repo slowly fragments into five. Enforcement, not documentation, is what stops it.
-- **Prose loses to code.** A DESIGN.md tells an agent what to do; a failing check makes it. Documentation is the floor, enforcement is the ceiling.
+- **The 80% problem.** Most UI code is now AI-written, and agents happily invent colors, spacing, and component patterns. Review has become "catch what the agent broke."
+- **Five design systems.** Every agent session re-derives your design system from context, so the same repo slowly fragments into five.
+- **Prose loses to code.** A `DESIGN.md` tells an agent what to do; a failing check makes it. Documentation is the floor, enforcement is the ceiling.
 
-## The pipeline
+## What Design Memory does differently
+
+- **Net-new-only enforcement.** A baseline plus decision memory means adoption on a brownfield codebase never blocks the backlog. Only new or reopened drift blocks. ([details](#decision-memory))
+- **Deterministic gate.** No model decides pass or fail. The rules are regex, AST, and contract checks with exact line/column and a closest-token suggestion on every finding.
+- **Memory, not just lint.** Accepted deviations are recorded with a reason, an optional expiry, and optional token dependencies. When the token changes, the exception invalidates itself.
+- **Agent-readable over MCP.** Agents ask for design context before writing (`dm_get_context`) instead of guessing from prose. Responses are compact, capped, and budget-tested.
+
+## Architecture
+
+![Architecture](docs/graphics/architecture.png)
+
+One reference snapshot feeds three enforcement surfaces (pre-commit hook, GitHub Action, agent loop) and one memory store. Everything lives in `.design-memory/` as plain files:
 
 ```
-Figma ──export──> tokens.json (DTCG 2025.10) ──> DESIGN.md ──> @theme CSS
-      Tokens Studio / Figma variables commit these to git
-                                                      │
-                                  design-memory sync-reference
-                                                      ▼
-                                          reference-snapshot.json
-                                                      │
-        ┌─────────────────────────────────────────────┼────────────────────────────┐
-        ▼                                             ▼                            ▼
-   pre-commit hook                          GitHub Action                     agent loop
-   design-memory audit                    inline PR annotations            design-memory audit --json
+tokens.json + DESIGN.md ──sync-reference──> .design-memory/reference-snapshot.json
+                                                   │
+                 ┌─────────────────────────────────┼──────────────────────────────┐
+                 ▼                                 ▼                              ▼
+          pre-commit hook                    GitHub Action                  MCP server
+          design-memory audit              inline PR annotations          design-memory mcp
+                 │                                 │                              │
+                 └──────────────> .design-memory/  <──────────────────────────────┘
+                       baseline.json · decisions.json · decisions.log.jsonl · runs/
 ```
+
+| Module | Responsibility |
+| --- | --- |
+| `src/lib/ast.ts` | Extracts only real `className`/`style` JSX usages, including `cn()`/`clsx()` helpers, with 1-based line/column. Never comments or plain strings. |
+| `src/lib/theme.ts` | Parses Tailwind v4 `@theme` so arbitrary values backed by the repo's own tokens pass. |
+| `src/lib/audit.ts` | Diff-scopes every finding to lines actually changed, applies baseline and decision memory, derives statuses. |
+| `src/lib/memory/` | Decision schema, lifecycle (expiry, invalidation, supersede), precedence lookup, repair from the append log. |
+| `src/lib/api.ts` | The single programmatic surface shared by the CLI and the MCP server, so the two can never drift apart. |
+| `src/mcp/` | Stdio MCP server: 7 tools, 8 resources, 3 prompts. No shell-outs, deterministic output, byte budgets in tests. |
 
 ## Quickstart (2 minutes)
 
 ```bash
 npx @derinb/design-memory init            # 1. config + pre-commit hook
-npx @derinb/design-memory sync-reference  # 2. snapshot DESIGN.md + tokens.json
+npx @derinb/design-memory sync-reference  # 2. snapshot tokens.json + DESIGN.md
 git add .
 npx @derinb/design-memory audit           # 3. gate your staged changes
 npx @derinb/design-memory ghost --write   # 4. generate agent rules files
-npx @derinb/design-memory review          # 5. see the memory ledger
-npx @derinb/design-memory compare         # 6. resolved vs remaining vs new vs reopened
 ```
 
-## Three enforcement surfaces
-
-| Surface | How | Exit codes |
-| --- | --- | --- |
-| Pre-commit hook | `design-memory init` installs a hook running `audit` | 0 clean / 1 drift / 2 no snapshot |
-| GitHub Action | `derinbarutcu17/DesignMemory@main` annotates the PR diff inline | check fails on net-new errors |
-| Agent loop | `design-memory audit --json` — pure JSON on stdout, human output on stderr | same codes; agent parses with `jq` |
-
-GitHub Action:
-
-```yaml
-- uses: derinbarutcu17/DesignMemory@main
-  with:
-    strictness: block   # or warn for advisory-only
-```
-
-Live proof: [PR #1 on the demo repo](https://github.com/derinbarutcu17/design-memory-demo/pull/1) — raw hex, arbitrary padding/radius, and an inline style added by "the agent" — the check failed with annotations on the exact lines:
-
-![Design Memory blocking drift with inline PR annotations](docs/assets/pr-annotations.png)
-
-## The memory layer (no competitor has this)
-
-Every finding gets a stable fingerprint. Design Memory remembers what happened to it:
+## MCP: the agent side of the loop
 
 ```bash
-design-memory audit --create-baseline                # adopt on an existing repo
-# Future runs block only net-new or reopened drift. Existing drift is listed, never re-blocks.
-
-design-memory review --fingerprint abc123 --status intentional --note "shipping as-is"
-# The remembered decision keeps that finding out of every future blocking run.
-
-design-memory review --export                        # markdown ledger: rule, file:line, status, note, timestamps
-design-memory compare                                # Resolved / Remaining / New / Reopened
+design-memory mcp            # stdio server; clients spawn it per project
 ```
 
-This makes adoption safe on brownfield codebases: the gate starts blocking the *next* piece of drift, not your entire backlog.
+Registration snippets (Claude Code / Cursor / OpenCode style):
 
-## DTCG-native reference
-
-`sync-reference` reads the actual 2026 token pipeline — W3C DTCG Design Tokens ([stable Oct 2025](https://design-tokens.github.io/community-group/format/), backed by Adobe, Google, Meta, Figma), the format Tokens Studio and Figma variable exports commit to git:
-
-```jsonc
-// tokens.json
-{
-  "color": { "primary": { "$value": "#2563eb", "$type": "color" } },
-  "spacing": { "md": { "$value": "16px", "$type": "spacing" } }
-}
+```json
+{ "mcpServers": { "design-memory": { "command": "npx", "args": ["-y", "@derinb/design-memory", "mcp"] } } }
 ```
 
-```jsonc
-// design-memory.config.json
-{
-  "reference": {
-    "sourceType": "dtcg",
-    "path": "./tokens.json",
-    "designMdPath": "./DESIGN.md"   // tokens from DTCG, component contracts from DESIGN.md
-  }
-}
+| Tool | Purpose |
+| --- | --- |
+| `dm_get_context` | Tokens, contracts, active decisions, and rules for the files the agent is about to touch. Call this first. |
+| `dm_audit_diff` | Run the gate on staged, working, range, or explicit files. Returns findings with line/col and `wouldBlock`. Read-only unless `persist: true`. |
+| `dm_suggest_token` | Nearest approved token for a raw value (`#0f766e`, `13px`), with an exact match when one exists. |
+| `dm_record_decision` | Record a reviewed intent (with reason, expiry, token dependencies). Dry-run supported. |
+| `dm_get_decisions` | Prior decisions so agents stop re-litigating settled questions. |
+| `dm_get_tokens` | Browse the token vocabulary, index or values, filtered by type or path prefix. |
+| `dm_get_contract` | One component's rulebook: required patterns, disallowed patterns, states, variants, decisions. |
+
+Resources cover the full documents (`dm://tokens`, `dm://design-md`, `dm://contracts/{component}`, `dm://decisions`, `dm://rules`, `dm://config`), and three prompts (`dm/implement-component`, `dm/fix-drift`, `dm/review-drift`) encode the intended workflow.
+
+Every response is a compact envelope with a summary, the smallest useful data, and pointers for progressive disclosure. Budgets are asserted in `test/mcp/mcp.test.ts` (for example, standard context stays under 4 KB on the demo app).
+
+The agent loop, end to end:
+
+![Agent loop](docs/graphics/loop.png)
+
+## Decision memory
+
+![Decision memory](docs/graphics/decision-memory.png)
+
+```bash
+design-memory memory add --rule color.raw-hex --file src/ui/SupplierMark.tsx \
+  --reason "Vendor marks use their official palette" --author human:derin
+design-memory memory list --status active
+design-memory memory expire --id dec_9f2a11c3
+design-memory memory repair        # rebuild decisions.json from the append log
 ```
 
-Token names become code hints automatically (`color.primary` → `bg-primary`, `text-primary`, `border-primary`), so `token.mismatch` enforcement works with zero hand-written configuration. `DESIGN.md` in the Google Stitch format parses natively (numbered sections, color roles, component bullets, token tables), and `ghost --format design-md` regenerates a spec-aligned DESIGN.md from the snapshot — the tool is a DESIGN.md author, not just a reader.
+A decision carries:
 
-## Ghost: the agent design pack
+- `kind`: `intentional` (accepted for good), `exception` (temporary), or `decision` (policy).
+- A target: `file`, `glob`, `component`, `tokenPath`, `value`, or an exact `fingerprint`.
+- `reason` (10-500 chars, placeholders rejected), `author`, optional `expiresAt`.
+- Optional `tokenDependency`: if any referenced token value changes, the decision invalidates itself and the finding blocks again.
 
-`design-memory ghost --write` generates every agent-facing artifact from the snapshot in one command — `.cursor/rules/design.mdc`, `CLAUDE.md` / `AGENTS.md` / `copilot-instructions.md` / `.clinerules` sections (marker-based, idempotent), `design-tokens.md`, and `DESIGN.md`. Every file is a slim list of exact tokens and classes, and ends with:
-
-> Violations are enforced by: design-memory audit (pre-commit, CI, and agent loop).
-
-Run it once with no args to see the plan; `--write` applies it.
+Resolution is deterministic and documented: exact file+value beats file, then component, then glob, then token-path scoping; expired, invalidated, and superseded decisions never suppress. Old `reviews.json` files migrate automatically.
 
 ## Rules
 
@@ -126,22 +123,68 @@ Run it once with no args to see the plan; `--write` applies it.
 | `component.variant-drift` | warn | variant values outside the approved set |
 | `component.missing-state` | warn | contract state (hover/focus/disabled/...) absent |
 
-Every finding names the exact replacement: `Replace p-[9px] with p-sm (token spacing.sm)` — the closest token from the reference, so agents repair instead of inventing new token names.
+Every finding names the exact replacement: `Replace p-[9px] with p-3 (token spacing.3)`.
 
-## Architecture
+![Drift before and after](docs/graphics/drift-before-after.png)
 
-One paragraph: `ast.ts` extracts only real `className`/`style` JSX attributes (never comments or strings) with 1-based line/column; `theme.ts` parses Tailwind v4 `@theme` blocks so arbitrary values backed by the repo's own tokens pass; `audit.ts` diff-scopes every finding to lines actually changed in this PR (net-new semantics); `state.ts` keeps the snapshot, run history, baseline, and reviews in `.design-memory/` — pure local files, no database, no telemetry.
+## Enforcement surfaces
+
+| Surface | How | Exit codes |
+| --- | --- | --- |
+| Pre-commit hook | `design-memory init` installs a hook running `audit` | 0 clean / 1 drift / 2 no snapshot |
+| GitHub Action | `derinbarutcu17/DesignMemory@main` annotates the PR diff inline | check fails on net-new errors |
+| Agent loop | `design-memory mcp` or `design-memory audit --json` | same codes; MCP returns `wouldBlock` |
+
+Live proof on the older showcase: [PR #1 on the demo repo](https://github.com/derinbarutcu17/design-memory-demo/pull/1).
+
+## The demo app: Northwind Procurement Console
+
+`apps/procure-dash/` is a deliberately product-shaped demo: a procurement dashboard with KPI cards, dense supplier and contract tables, token-driven SVG charts, a contract drawer, filters, status badges, and loading/empty/error states (`?state=loading|empty|error`).
+
+![Procurement overview](docs/graphics/app-overview.png)
+![Supplier table](docs/graphics/portfolio-hero.png)
+![Contracts](docs/graphics/app-contracts.png)
+
+```bash
+npm --prefix apps/procure-dash install
+npm --prefix apps/procure-dash run dev
+```
+
+It ships with a token system (36 DTCG tokens), six component contracts in `DESIGN.md`, a baseline that accepts two pre-existing legacy findings, and three seeded decisions from `scripts/seed-demo-decisions.ts`:
+
+1. vendor brand marks may use their official palette (`SupplierMark.tsx`),
+2. the dense numerics column may use 13px, tied to `fontSize.sm` so a type-scale change invalidates it,
+3. badge risk tiers are fixed at three by policy.
+
+The bake suite drives agent-style edits against this app:
+
+```bash
+npm run bake
+```
+
+Fourteen scenarios: raw hex, off-scale spacing, inline style, off-scale radius, removed required pattern, a decision-suppressed finding, untouched legacy drift, net-new drift in a legacy file, token-change invalidation, a clean token-only pass, consumer-file contract isolation, malformed config, missing snapshot, and a forty-file performance budget run.
+
+## Motion and video
+
+The 60-second motion piece is built with Framer Motion (`motion`) in `docs/video/motion/` and recorded from a real headless Chrome session via CDP screencast. Regenerate the bundle with `npm run video:build`; record with `npm run video`.
+
+- `docs/video/design-memory-motion-30fps.mp4` (60 s, smoothed to 30 fps)
+- `docs/video/design-memory-motion.mp4` (native capture rate)
+- `docs/video/design-memory-loop.mp4` (15 s square loop for portfolio pages)
+- Stills in `docs/video/frames/`, diagrams in `docs/graphics/` (`npm run graphics`, `npm run shots`)
 
 ## Commands
 
 ```bash
-design-memory init                    # config + pre-commit hook
-design-memory sync-reference          # DESIGN.md / tokens.json / Stitch / Figma -> snapshot
+design-memory init
+design-memory sync-reference
 design-memory audit [--json] [--create-baseline]
-design-memory scan --pr=123           # gh CLI-backed PR audit
+design-memory scan --pr=123
 design-memory review [--export] [--fingerprint X --status intentional --note "..."]
 design-memory compare
 design-memory ghost [--write] [--format design-md]
+design-memory memory list|add|expire|repair
+design-memory mcp [--cwd <path>]
 ```
 
 ## Config
@@ -152,41 +195,55 @@ design-memory ghost [--write] [--format design-md]
   "stateDir": ".design-memory",
   "reference": {
     "sourceType": "dtcg",              // design-md | stitch-markdown | figma | dtcg
-    "path": "./tokens.json",           // for dtcg; else ./DESIGN.md
-    "designMdPath": "./DESIGN.md",     // optional: components from DESIGN.md, tokens from DTCG
+    "path": "./tokens.json",
+    "designMdPath": "./DESIGN.md",     // components from DESIGN.md, tokens from DTCG
     "strictDesignMd": false
   },
-  "include": ["src/components/**/*.tsx", "src/app/**/*.tsx"],
-  "exclude": ["src/lib/**", "**/*.test.tsx", "**/*.test.ts"],
-  "rules": { "color.raw-hex": "error", "tailwind.arbitrary-spacing": "error", /* ... */ },
+  "include": ["src/ui/**/*.tsx", "src/routes/**/*.tsx"],
+  "exclude": ["src/data/**"],
+  "rules": { "color.raw-hex": "error" },
   "baseline": { "mode": "net-new-only" },
-  "llmFallback": { "enabled": false, "mode": "explain-only" },
-  "visualProvider": "none"
+  "llmFallback": { "enabled": false, "mode": "disabled" },
 }
 ```
 
-## Demo
+## Quality gates
 
 ```bash
-npm install
-npm run build
-npm run demo:design-memory:audit
+npm run typecheck   # tsc --noEmit
+npm run lint        # eslint
+npm test            # 49 unit and integration tests
+npm run test:mcp    # 8 MCP protocol, budget, and determinism tests
+npm run bake        # 14 end-to-end scenarios
+npm run gates       # all of the above, plus build
 ```
 
-Six acts against the real engine, in a throwaway git repo: sync → baseline a brownfield → clean pass → drift blocked with exact line/column and closest-token suggestions → theme-backed arbitrary values pass → a finding reviewed as `intentional` no longer blocks. The showcase is a real Vite + React + Tailwind v4 app (`examples/design-memory-showcase/`).
+CI runs typecheck, build, lint, tests, MCP tests, bake scenarios, and a package smoke test on Node 20 and 22.
+
+## Limits and non-goals
+
+- React/TSX (and plain TS) only. Vue, Svelte, and HTML files are skipped with a warning.
+- Exact token values in arbitrary classes pass by design: the value is provably in the system.
+- `rgb()`/`oklch()`/`hsl()` values are not special-cased, though inline styles are still flagged.
+- Figma sources need `FIGMA_ACCESS_TOKEN` and network access; not exercised in CI.
+- One config per package. Run the CLI from the package directory in a monorepo (git paths are scoped automatically).
+- MCP is stdio only. No remote transport.
+- Visual diffing is explicitly out of scope.
 
 ## Roadmap
 
 - DTCG `$type` coverage for shadows/gradients in token enforcement
 - Precompiled-CSS checking once source-level is bulletproof
-- Visual diffing: **explicitly out** — flaky, crowded, Argos already owns it
+- Additional MCP detail levels tuned from real agent sessions
 
 ## Development
 
 ```bash
 npm install
-npm run build && npm test && npm run lint
-npm run demo:design-memory:audit
+npm run gates
+npm run demo:design-memory:audit   # the older showcase harness
 ```
 
-CI runs TypeScript, ESLint, and the test suite on Node 18/20/22.
+## License
+
+MIT
