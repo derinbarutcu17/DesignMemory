@@ -1,21 +1,32 @@
 {
   "name": "@derinb/design-memory",
-  "version": "0.3.0",
-  "description": "Blocks net-new design drift in AI-written React/Tailwind code. Deterministic, local-first, DTCG-native.",
+  "version": "0.4.0",
+  "description": "Blocks net-new design drift in AI-written React/Tailwind code. Deterministic, local-first, DTCG-native, with agent-readable decision memory over MCP.",
   "private": false,
+  "engines": {
+    "node": ">=20"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/derinbarutcu17/DesignMemory.git"
   },
   "scripts": {
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "cli": "tsx src/cli/index.ts",
+    "mcp": "tsx src/cli/index.ts mcp",
     "build": "tsc",
-    "test": "test -d test && node --import tsx --test \"test/**/*.test.ts\" || echo \"No test files found\"",
+    "test": "node --import tsx --test \"test/*.test.ts\" \"test/memory/*.test.ts\"",
+    "test:mcp": "node --import tsx --test \"test/mcp/**/*.test.ts\"",
+    "bake": "node --import tsx bake/run.ts",
+    "gates": "npm run typecheck && npm run lint && npm run build && npm test && npm run test:mcp && npm run bake",
+    "demo:app": "npm --prefix apps/procure-dash run dev",
+    "demo:app:build": "npm --prefix apps/procure-dash run build",
     "demo:design-memory:audit": "bash examples/design-memory-showcase/scripts/demo.sh",
     "prepack": "npm run build"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.3.6",
     "commander": "^12.0.0",
     "typescript": "^5"

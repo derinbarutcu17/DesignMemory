@@ -9,6 +9,8 @@ import { detectAvailableBrain, promptBrain } from './engine';
 import { readConfig, type DesignMemoryConfig, type RuleId, type RuleSeverity } from './config';
 import { getPullRequestScan, type PullRequestScan } from './github';
 import { createBaseline, loadBaseline, loadLatestRun, loadReferenceSnapshot, loadReviews, loadRunHistory, makeRunId, saveAuditRun } from './state';
+import { findDecisionForIssue } from './memory/lookup';
+import { loadDecisionsForAudit, recordDecisionSync } from './memory/store';
 import { findClosestToken, replacementSuggestion } from './tokens/closest';
 import type { AuditRun, DetectionSource, DriftIssue, ReferenceSnapshot } from './types';
 import { hashParts, normalizeForMatch, prettyJson, toPascalCase, uniqueStrings } from './utils';
@@ -31,6 +33,7 @@ type AuditOptions = {
   createBaseline?: boolean;
   json?: boolean;
   prScan?: PullRequestScan;
+  persist?: boolean;
 };
 
 type FileDiff = {
@@ -577,7 +580,10 @@ function buildIssueHistoryIndex(cwd: string): IssueHistoryIndex {
   const runHistory = loadRunHistory(cwd);
   return {
     reviews,
-    previousFingerprints: new Set(previousRun?.issues.filter((issue) => ['new', 'remaining', 'reopened', 'intentional', 'ignored'].includes(issue.status)).map((issue) => issue.fingerprint) ?? []),
+    // Suppressed findings (intentional/ignored) intentionally stay out of the
+    // previous-fingerprint set, so a finding blocks again once its decision
+    // expires or is superseded. It then derives to "reopened".
+    previousFingerprints: new Set(previousRun?.issues.filter((issue) => ['new', 'remaining', 'reopened'].includes(issue.status)).map((issue) => issue.fingerprint) ?? []),
     previousIssueKeys: new Map((previousRun?.issues ?? []).map((issue) => [getIssueKey(issue), issue.fingerprint])),
     historicalIssueKeys: new Map(
     runHistory
@@ -696,9 +702,31 @@ export async function scanPullRequest(prNumber: number, cwd = process.cwd(), opt
   });
 }
 
-export async function runAudit(deps: AuditDependencies = {}, options: AuditOptions = {}) {
+function applyDecisionMemory(issues: DriftIssue[], cwd: string) {
+  const { decisions, warnings } = loadDecisionsForAudit(cwd);
+  const mapped = issues.map((issue) => {
+    const match = findDecisionForIssue(issue, decisions);
+    if (!match) {
+      return issue;
+    }
+    const status: DriftIssue['status'] = match.kind === 'exception' ? 'ignored' : 'intentional';
+    return { ...issue, status, suppressedBy: match.decisionId };
+  });
+  return { issues: mapped, warnings };
+}
+
+export type AuditExecution = {
+  skipped: boolean;
+  missingSnapshot: boolean;
+  exitCode: 0 | 1 | 2;
+  run: AuditRun | null;
+  blockingCount: number;
+};
+
+export async function executeAudit(deps: AuditDependencies = {}, options: AuditOptions = {}): Promise<AuditExecution> {
   const cwd = options.cwd ?? process.cwd();
   const mode = options.mode ?? 'staged';
+  const persist = options.persist ?? true;
   const config = readConfig(cwd);
   const getDiff = deps.getDiff ?? ((targetCwd?: string) => getStagedDiff(targetCwd ?? cwd));
   const getFileContent = deps.getFileContent ?? ((filePath: string, targetCwd?: string) => getStagedFileContent(filePath, targetCwd ?? cwd));
@@ -706,22 +734,15 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
   const resolveSnapshot = deps.resolveSnapshot ?? resolveReferenceSnapshot;
   const getBrain = deps.getBrain ?? ((fetchFn?: typeof fetch) => detectAvailableBrain(fetchFn ?? fetch, cwd));
   const askBrain = deps.askBrain ?? promptBrain;
-  const exit = deps.exit ?? process.exit;
 
-  // Banner on stderr so --json stdout stays parseable.
-  console.error('\x1b[36m%s\x1b[0m', '[Design Memory] Starting audit...');
   const diff = options.diff ?? getDiff(cwd);
   if (!diff) {
-    console.log('[Design Memory] No staged UI changes detected. Skipping audit.');
-    exit(0);
-    return;
+    return { skipped: true, missingSnapshot: false, exitCode: 0, run: null, blockingCount: 0 };
   }
 
   let snapshot = getSnapshot(cwd);
   if (!snapshot) {
-    console.error('[Design Memory] No reference snapshot found. Run `design-memory sync-reference` first.');
-    exit(2);
-    return;
+    return { skipped: false, missingSnapshot: true, exitCode: 2, run: null, blockingCount: 0 };
   }
   if (!snapshot.metadata.importedAt) {
     snapshot = await resolveSnapshot(cwd);
@@ -732,9 +753,7 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
     const importedAt = new Date(snapshot.metadata.importedAt).getTime();
     const daysOld = Math.floor((Date.now() - importedAt) / 86_400_000);
     if (daysOld >= 7) {
-      const message = `reference snapshot is ${daysOld} days old, run design-memory sync-reference`;
-      warnings.push(message);
-      console.warn(`\x1b[33m%s\x1b[0m`, `[Design Memory] ⚠️ ${message}`);
+      warnings.push(`reference snapshot is ${daysOld} days old, run design-memory sync-reference`);
     }
   }
 
@@ -748,6 +767,14 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
   const mappings = matchComponents(snapshot, files);
   let issues = findDeterministicIssues(snapshot, files, mappings, config, cwd);
   issues = applyReviewAndBaselineState(issues, cwd);
+
+  const memoryResult = applyDecisionMemory(issues, cwd);
+  issues = memoryResult.issues;
+  for (const warning of memoryResult.warnings) {
+    if (!warnings.includes(warning)) {
+      warnings.push(warning);
+    }
+  }
 
   if (config.llmFallback.enabled && config.llmFallback.mode !== 'disabled' && issues.length > 0) {
     const brain = await getBrain();
@@ -790,12 +817,51 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
     createdAt: new Date().toISOString(),
   };
 
-  saveAuditRun(run, cwd);
+  if (persist) {
+    saveAuditRun(run, cwd);
+    if (options.createBaseline) {
+      createBaseline(issues.map((issue) => issue.fingerprint), cwd);
+      run.baselineCreated = true;
+    }
+  }
 
-  if (options.createBaseline) {
-    const accepted = issues.filter((issue) => issue.status === 'new' || issue.status === 'remaining').length;
-    createBaseline(issues.map((issue) => issue.fingerprint), cwd);
-    run.baselineCreated = true;
+  const blockingIssues = issues.filter((issue) => issue.severity === 'error' && (issue.status === 'new' || issue.status === 'reopened'));
+  const shouldBlock = blockingIssues.length > 0 && mode !== 'scan' && config.strictness === 'block';
+
+  return {
+    skipped: false,
+    missingSnapshot: false,
+    exitCode: shouldBlock ? 1 : 0,
+    run,
+    blockingCount: blockingIssues.length,
+  };
+}
+
+export async function runAudit(deps: AuditDependencies = {}, options: AuditOptions = {}) {
+  const exit = deps.exit ?? process.exit;
+  // Banner on stderr so --json stdout stays parseable.
+  console.error('\x1b[36m%s\x1b[0m', '[Design Memory] Starting audit...');
+  const result = await executeAudit(deps, options);
+
+  if (result.skipped) {
+    console.log('[Design Memory] No staged UI changes detected. Skipping audit.');
+    exit(0);
+    return;
+  }
+
+  if (result.missingSnapshot || !result.run) {
+    console.error('[Design Memory] No reference snapshot found. Run `design-memory sync-reference` first.');
+    exit(2);
+    return;
+  }
+
+  const run = result.run;
+  for (const warning of run.warnings ?? []) {
+    console.warn(`\x1b[33m%s\x1b[0m`, `[Design Memory] ⚠️ ${warning}`);
+  }
+
+  if (options.createBaseline && run.baselineCreated) {
+    const accepted = run.issues.filter((issue) => issue.status === 'new' || issue.status === 'remaining').length;
     if (options.json) {
       console.log(prettyJson(run));
     } else {
@@ -815,14 +881,11 @@ export async function runAudit(deps: AuditDependencies = {}, options: AuditOptio
     printHumanReport(run, false);
   }
 
-  const blockingIssues = issues.filter((issue) => issue.severity === 'error' && (issue.status === 'new' || issue.status === 'reopened'));
-  if (blockingIssues.length > 0 && mode !== 'scan' && config.strictness === 'block') {
+  if (result.exitCode === 1) {
     console.warn('\x1b[33m%s\x1b[0m', '\n[Design Memory] ⚠️ Commit blocked. If this is a false positive, force the commit by running: git commit --no-verify');
-    exit(1);
-    return;
   }
 
-  exit(0);
+  exit(result.exitCode);
 }
 
 export function loadLatestRunJson(cwd = process.cwd()) {
@@ -835,7 +898,28 @@ export function loadLatestRunJson(cwd = process.cwd()) {
 
 export function reviewFinding(fingerprint: string, status: 'intentional' | 'ignore', note?: string, cwd = process.cwd()) {
   const { saveReview } = require('./state') as typeof import('./state');
-  return saveReview({ fingerprint, status, note }, cwd);
+  const review = saveReview({ fingerprint, status, note }, cwd);
+
+  try {
+    const latest = loadLatestRun(cwd);
+    const issue = latest?.issues.find((entry) => entry.fingerprint === fingerprint);
+    recordDecisionSync(
+      {
+        kind: status === 'intentional' ? 'intentional' : 'exception',
+        ruleId: issue?.ruleId ?? '*',
+        target: issue
+          ? { file: issue.filePath, value: issue.found, fingerprint }
+          : { fingerprint },
+        reason: note && note.trim().length >= 10 ? note.trim() : 'Recorded through the review command.',
+        author: 'human:review-cli',
+      },
+      cwd,
+    );
+  } catch {
+    // reviews.json remains the fallback; decision memory is best effort here.
+  }
+
+  return review;
 }
 
 export function compareRuns(cwd = process.cwd()) {

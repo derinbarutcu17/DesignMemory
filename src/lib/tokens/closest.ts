@@ -37,64 +37,77 @@ function hexToRgb(hex: string): [number, number, number] | null {
  * so the audit never guesses wildly.
  */
 export function findClosestToken(tokens: ReferenceToken[], found: string): ReferenceToken | null {
-  const target = normalizeValue(found);
-  if (!target) {
-    return null;
+  const [best] = rankClosestTokens(tokens, found, 1);
+  return best && best.score >= 0.55 ? best.token : null;
+}
+
+export type RankedToken = {
+  token: ReferenceToken;
+  score: number;
+};
+
+function scoreToken(token: ReferenceToken, target: string, targetNum: RegExpMatchArray | null, targetRgb: [number, number, number] | null) {
+  let best = 0;
+
+  for (const candidate of [token.value, ...(token.aliases ?? []), ...(token.codeHints ?? [])]) {
+    if (!candidate) {
+      continue;
+    }
+    const normalized = normalizeValue(candidate);
+    if (!normalized) {
+      continue;
+    }
+
+    if (normalized === target) {
+      return 1;
+    }
+
+    let score = 0;
+    const candNum = normalized.match(/^(\d+(?:\.\d+)?)/);
+    if (targetNum && candNum) {
+      const a = Number(targetNum[1]);
+      const b = Number(candNum[1]);
+      score = 1 - Math.abs(a - b) / Math.max(a, b, 1);
+    }
+
+    if (targetRgb) {
+      const candRgb = hexToRgb(candidate);
+      if (candRgb) {
+        const distance =
+          Math.abs(targetRgb[0] - candRgb[0]) +
+          Math.abs(targetRgb[1] - candRgb[1]) +
+          Math.abs(targetRgb[2] - candRgb[2]);
+        score = Math.max(score, 1 - distance / 765);
+      }
+    }
+
+    if (score === 0 && (normalized.startsWith(target) || target.startsWith(normalized))) {
+      score = Math.min(normalized.length, target.length) / Math.max(normalized.length, target.length);
+    }
+
+    if (score > best) {
+      best = score;
+    }
   }
 
-  let best: ReferenceToken | null = null;
-  let bestScore = 0;
+  return best;
+}
+
+export function rankClosestTokens(tokens: ReferenceToken[], found: string, limit = 3): RankedToken[] {
+  const target = normalizeValue(found);
+  if (!target) {
+    return [];
+  }
 
   const targetNum = target.match(/^(\d+(?:\.\d+)?)/);
   const targetRgb = hexToRgb(found);
 
-  for (const token of tokens) {
-    const candidates = [token.value, ...(token.aliases ?? []), ...(token.codeHints ?? [])];
-
-    for (const candidate of candidates) {
-      if (!candidate) {
-        continue;
-      }
-      const normalized = normalizeValue(candidate);
-      if (!normalized) {
-        continue;
-      }
-
-      let score = 0;
-      if (normalized === target) {
-        return token;
-      }
-
-      const candNum = normalized.match(/^(\d+(?:\.\d+)?)/);
-      if (targetNum && candNum) {
-        const a = Number(targetNum[1]);
-        const b = Number(candNum[1]);
-        score = 1 - Math.abs(a - b) / Math.max(a, b, 1);
-      }
-
-      if (targetRgb) {
-        const candRgb = hexToRgb(candidate);
-        if (candRgb) {
-          const distance =
-            Math.abs(targetRgb[0] - candRgb[0]) +
-            Math.abs(targetRgb[1] - candRgb[1]) +
-            Math.abs(targetRgb[2] - candRgb[2]);
-          score = Math.max(score, 1 - distance / 765);
-        }
-      }
-
-      if (score === 0 && (normalized.startsWith(target) || target.startsWith(normalized))) {
-        score = Math.min(normalized.length, target.length) / Math.max(normalized.length, target.length);
-      }
-
-      if (score > bestScore) {
-        bestScore = score;
-        best = token;
-      }
-    }
-  }
-
-  return bestScore >= 0.55 ? best : null;
+  return tokens
+    .map((token, index) => ({ token, index, score: scoreToken(token, target, targetNum, targetRgb) }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .slice(0, Math.max(1, limit))
+    .map(({ token, score }) => ({ token, score: Math.round(score * 100) / 100 }));
 }
 
 export function replacementSuggestion(token: ReferenceToken | null, foundClass: string): string {

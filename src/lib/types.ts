@@ -122,6 +122,7 @@ export type DriftIssue = {
   status: DriftStatus;
   line?: number;
   column?: number;
+  suppressedBy?: string;
 };
 
 export type IssueReview = {
