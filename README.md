@@ -1,7 +1,7 @@
 # Design Memory
 
 [![CI](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml/badge.svg)](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@derinb/design-memory)](https://www.npmjs.com/package/@derinb/design-memory)
+[![release](https://img.shields.io/github/v/release/derinbarutcu17/DesignMemory)](https://github.com/derinbarutcu17/DesignMemory/releases)
 [![license](https://img.shields.io/github/license/derinbarutcu17/DesignMemory)](LICENSE)
 
 **The deterministic memory and guardrail layer between your design system and the agents writing your frontend.**
