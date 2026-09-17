@@ -33,8 +33,9 @@ This repo is a local-first CLI and review engine. It is not a visual QA platform
 
 ## Important Docs
 
-- `README.md` - Main workflow and command reference.
-- `docs/demo/live-demo-script.md` - 5-minute walkthrough with fallbacks.
+- `README.md` - Plain-English overview for humans (non-technical).
+- `TECHNICAL.md` - Technical reference: architecture, MCP tools, rules, install paths, quality gates.
+- `docs/demo/live-demo-script.md` - Five-minute walkthrough with fallbacks.
 - `docs/demo/meeting-notes.md` - Talking points and likely questions.
 
 ## Typical Workflow
