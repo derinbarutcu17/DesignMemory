@@ -43,7 +43,7 @@ export function evaluateDecision(decision: Decision, ctx: LifecycleContext): Dec
 
   if (decision.expiresAt) {
     const expiry = new Date(decision.expiresAt).getTime();
-    if (!Number.isNaN(expiry) && ctx.now.getTime() > expiry) {
+    if (!Number.isNaN(expiry) && ctx.now.getTime() >= expiry) {
       return { status: 'expired' };
     }
   }
