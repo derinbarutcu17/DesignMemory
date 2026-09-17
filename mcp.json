@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "design-memory": {
-      "command": "npx",
-      "args": ["-y", "@derinb/design-memory", "mcp"],
-      "env": {}
-    }
-  }
-}

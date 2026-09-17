@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "design-memory": {
+      "type": "local",
+      "command": ["node", "/absolute/path/to/design-memory/dist/cli/index.js", "mcp", "--cwd", "/absolute/path/to/your/project"],
+      "enabled": true
+    }
+  }
+}

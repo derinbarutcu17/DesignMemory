@@ -19,19 +19,25 @@ This repo is a local-first CLI and review engine. It is not a visual QA platform
 
 - `src/cli` - Command-line entrypoints.
 - `src/lib` - Core engine, policy, git, GitHub, context, and state logic.
+- `src/lib/memory` - Decision memory: schema, lifecycle, lookup precedence, store, repair.
+- `src/mcp` - Stdio MCP server (tools, resources, prompts) and the response envelope.
 - `src/lib/design-md` - Design.md normalization and parsing helpers.
 - `src/lib/figma` - Figma extraction and normalization helpers.
 - `src/lib/stitch` - Stitch parsing and normalization helpers.
-- `examples/design-memory-showcase` - Demo app and showcase harness that runs the real engine against a temporary repo.
-- `test/` - Unit and integration tests.
+- `apps/procure-dash` - Product-shaped demo app with its own tokens, contracts, baseline, and decisions.
+- `bake/` - End-to-end scenarios that apply agent-style edits and assert audit outcomes.
+- `examples/design-memory-showcase` - Original 6-act showcase harness that runs the real engine against a temporary repo.
+- `examples/mcp-registration` - MCP client registration snippets.
+- `scripts/demo`, `scripts/graphics`, `scripts/video` - Demo seeding, asset rendering, motion recording.
+- `test/` - Unit and integration tests; MCP protocol suites live in `test/mcp/`.
 - `agent-plugin.json` - Plugin metadata.
-- `mcp.json` - MCP surface definition.
 
 ## Important Docs
 
 - `README.md` - Main workflow and command reference.
-- `examples/design-memory-showcase/README.md` - Demo-specific notes.
-- `examples/design-memory-showcase/DESIGN.md` - Reference design contract used by the showcase.
+- `docs/demo/live-demo-script.md` - 5-minute walkthrough with fallbacks.
+- `docs/demo/meeting-notes.md` - Talking points and likely questions.
+- `examples/design-memory-showcase/README.md` - Showcase-specific notes.
 
 ## Typical Workflow
 
@@ -60,15 +66,17 @@ design-memory scan --pr=123
 design-memory review
 design-memory compare
 design-memory ghost
+design-memory memory list|add|expire|repair
+design-memory mcp
 ```
 
-Showcase flows:
+Verification and demo flows:
 
 ```bash
-npm run demo:design-memory:audit
+npm run typecheck && npm run lint && npm test && npm run test:mcp && npm run bake
+npm run demo:app                   # the demo product surface
+npm run demo:design-memory:audit   # the showcase harness
 ```
-
-The `demo:design-memory:web` flow is retired; the audit demo runs the real engine against a throwaway repo.
 
 ## Editing Guidance
 

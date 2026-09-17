@@ -50,12 +50,15 @@ tokens.json + DESIGN.md ──sync-reference──> .design-memory/reference-sna
 ## Quickstart (2 minutes)
 
 ```bash
-npx @derinb/design-memory init            # 1. config + pre-commit hook
-npx @derinb/design-memory sync-reference  # 2. snapshot tokens.json + DESIGN.md
+npm install && npm run build          # from this repo (package not on npm yet)
+node dist/cli/index.js init           # 1. config + pre-commit hook
+node dist/cli/index.js sync-reference # 2. snapshot tokens.json + DESIGN.md
 git add .
-npx @derinb/design-memory audit           # 3. gate your staged changes
-npx @derinb/design-memory ghost --write   # 4. generate agent rules files
+node dist/cli/index.js audit          # 3. gate your staged changes
+node dist/cli/index.js ghost --write  # 4. generate agent rules files
 ```
+
+`@derinb/design-memory` is not published to npm yet. Use the built CLI from this repo, or `npm link` it. Once published, replace `node dist/cli/index.js` with `npx @derinb/design-memory`.
 
 ## MCP: the agent side of the loop
 
@@ -63,11 +66,7 @@ npx @derinb/design-memory ghost --write   # 4. generate agent rules files
 design-memory mcp            # stdio server; clients spawn it per project
 ```
 
-Registration snippets (Claude Code / Cursor / OpenCode style):
-
-```json
-{ "mcpServers": { "design-memory": { "command": "npx", "args": ["-y", "@derinb/design-memory", "mcp"] } } }
-```
+Registration snippets for Claude Code, Cursor, OpenCode, and Codex: [`examples/mcp-registration/`](examples/mcp-registration/README.md).
 
 | Tool | Purpose |
 | --- | --- |
@@ -150,7 +149,7 @@ npm --prefix apps/procure-dash install
 npm --prefix apps/procure-dash run dev
 ```
 
-It ships with a token system (36 DTCG tokens), six component contracts in `DESIGN.md`, a baseline that accepts two pre-existing legacy findings, and three seeded decisions from `scripts/seed-demo-decisions.ts`:
+It ships with a token system (36 DTCG tokens), six component contracts in `DESIGN.md`, a baseline that accepts two pre-existing legacy findings, and three seeded decisions from `scripts/demo/seed-demo-decisions.ts`:
 
 1. vendor brand marks may use their official palette (`SupplierMark.tsx`),
 2. the dense numerics column may use 13px, tied to `fontSize.sm` so a type-scale change invalidates it,
@@ -212,7 +211,7 @@ design-memory mcp [--cwd <path>]
 ```bash
 npm run typecheck   # tsc --noEmit
 npm run lint        # eslint
-npm test            # 49 unit and integration tests
+npm test            # 52 unit and integration tests
 npm run test:mcp    # 8 MCP protocol, budget, and determinism tests
 npm run bake        # 14 end-to-end scenarios
 npm run gates       # all of the above, plus build
@@ -236,12 +235,35 @@ CI runs typecheck, build, lint, tests, MCP tests, bake scenarios, and a package 
 - Precompiled-CSS checking once source-level is bulletproof
 - Additional MCP detail levels tuned from real agent sessions
 
+## Repo map
+
+| Path | What lives there |
+| --- | --- |
+| `src/cli/` | CLI entrypoints (`init`, `sync-reference`, `audit`, `scan`, `review`, `compare`, `ghost`, `memory`, `mcp`) |
+| `src/lib/` | Engine: `audit.ts`, `ast.ts`, `theme.ts`, `git.ts`, `github.ts`, `config.ts`, `state.ts`, the `api.ts` facade, source parsers (`dtcg/`, `design-md/`, `stitch/`, `figma/`), and `memory/` (decision schema, lifecycle, lookup, store) |
+| `src/mcp/` | Stdio MCP server: tools, resources, prompts, envelope shaper |
+| `test/` | 52 unit and integration tests on `node:test`; MCP protocol, budget, and determinism suites in `test/mcp/` |
+| `bake/` | 14 end-to-end scenarios: harness, scenario definitions, temp-repo fixtures |
+| `apps/procure-dash/` | The product-shaped demo app with its own `tokens.json`, `DESIGN.md`, baseline, and seeded decisions |
+| `examples/` | `mcp-registration/` client snippets; `design-memory-showcase/` the original 6-act harness |
+| `scripts/demo/` | `seed-demo-baseline.ts`, `seed-demo-decisions.ts` (demo app setup) |
+| `scripts/graphics/` | `render-graphics.ts` (diagrams), `render-app-shots.ts` (app screenshots) |
+| `scripts/video/` | `render-video.ts` (motion piece recording) |
+| `docs/graphics/` | Rendered diagrams and screenshots plus their HTML sources |
+| `docs/video/` | Motion piece (MP4s, posters, Framer Motion source) |
+| `docs/demo/` | `live-demo-script.md` (5-minute walkthrough with fallbacks), `meeting-notes.md` |
+| `action.yml`, `post.mjs` | GitHub Action and its PR annotation reporter |
+| `agent-plugin.json` | Agent plugin metadata shipped with the package |
+
 ## Development
 
 ```bash
 npm install
-npm run gates
-npm run demo:design-memory:audit   # the older showcase harness
+npm run gates                      # typecheck, lint, build, tests, MCP tests, bake
+npm run demo:app                   # run the demo app in dev mode
+npm run demo:design-memory:audit   # the original 6-act showcase harness
+npm run graphics && npm run shots  # re-render diagrams and app screenshots
+npm run video                      # rebuild and record the motion piece
 ```
 
 ## License

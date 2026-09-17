@@ -13,7 +13,7 @@ const assets = [
   { html: 'social-preview.html', out: 'social-preview.png', width: 1280, height: 640 },
 ];
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', '..');
 const srcDir = path.join(root, 'docs/graphics/src');
 const outDir = path.join(root, 'docs/graphics');
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'dm-chrome-'));

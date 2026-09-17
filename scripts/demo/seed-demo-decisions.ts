@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { recordDecisionSync } from '../src/lib/memory/store';
+import { recordDecisionSync } from '../../src/lib/memory/store';
 
 const cwd = path.resolve(process.argv[2] ?? 'apps/procure-dash');
 const expiresAt = new Date(Date.now() + 180 * 86_400_000).toISOString();

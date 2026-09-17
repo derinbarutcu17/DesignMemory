@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', '..');
 const motionDir = path.join(root, 'docs/video/motion');
 const framesDir = path.join(root, 'docs/video/frames');
 const captureSeconds = Number(process.env.DM_VIDEO_SECONDS ?? 64);

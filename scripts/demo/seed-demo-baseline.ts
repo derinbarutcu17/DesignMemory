@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { runAuditRequest } from '../src/lib/api';
-import { readConfig, shouldAuditFile } from '../src/lib/config';
+import { runAuditRequest } from '../../src/lib/api';
+import { readConfig, shouldAuditFile } from '../../src/lib/config';
 
 const cwd = path.resolve(process.argv[2] ?? 'apps/procure-dash');
 

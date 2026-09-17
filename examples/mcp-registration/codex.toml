@@ -1,0 +1,3 @@
+[mcp_servers.design-memory]
+command = "node"
+args = ["/absolute/path/to/design-memory/dist/cli/index.js", "mcp", "--cwd", "/absolute/path/to/your/project"]

@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', '..');
 const appDir = path.join(root, 'apps/procure-dash');
 const outDir = path.join(root, 'docs/graphics');
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'dm-chrome-shots-'));

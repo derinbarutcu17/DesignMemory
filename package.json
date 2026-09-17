@@ -22,10 +22,10 @@
     "gates": "npm run typecheck && npm run lint && npm run build && npm test && npm run test:mcp && npm run bake",
     "demo:app": "npm --prefix apps/procure-dash run dev",
     "demo:app:build": "npm --prefix apps/procure-dash run build",
-    "graphics": "node --import tsx scripts/render-graphics.ts",
-    "shots": "node --import tsx scripts/render-app-shots.ts",
+    "graphics": "node --import tsx scripts/graphics/render-graphics.ts",
+    "shots": "node --import tsx scripts/graphics/render-app-shots.ts",
     "video:build": "esbuild docs/video/motion/src/main.tsx --bundle --outfile=docs/video/motion/bundle.js --format=iife --loader:.tsx=tsx --jsx=automatic --define:process.env.NODE_ENV='\"production\"' --minify",
-    "video": "npm run video:build && node --import tsx scripts/render-video.ts",
+    "video": "npm run video:build && node --import tsx scripts/video/render-video.ts",
     "demo:design-memory:audit": "bash examples/design-memory-showcase/scripts/demo.sh",
     "prepack": "npm run build"
   },
