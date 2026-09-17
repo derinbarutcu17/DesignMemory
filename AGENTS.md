@@ -26,7 +26,6 @@ This repo is a local-first CLI and review engine. It is not a visual QA platform
 - `src/lib/stitch` - Stitch parsing and normalization helpers.
 - `apps/procure-dash` - Product-shaped demo app with its own tokens, contracts, baseline, and decisions.
 - `bake/` - End-to-end scenarios that apply agent-style edits and assert audit outcomes.
-- `examples/design-memory-showcase` - Original 6-act showcase harness that runs the real engine against a temporary repo.
 - `examples/mcp-registration` - MCP client registration snippets.
 - `scripts/demo`, `scripts/graphics`, `scripts/video` - Demo seeding, asset rendering, motion recording.
 - `test/` - Unit and integration tests; MCP protocol suites live in `test/mcp/`.
@@ -37,7 +36,6 @@ This repo is a local-first CLI and review engine. It is not a visual QA platform
 - `README.md` - Main workflow and command reference.
 - `docs/demo/live-demo-script.md` - 5-minute walkthrough with fallbacks.
 - `docs/demo/meeting-notes.md` - Talking points and likely questions.
-- `examples/design-memory-showcase/README.md` - Showcase-specific notes.
 
 ## Typical Workflow
 
@@ -75,7 +73,8 @@ Verification and demo flows:
 ```bash
 npm run typecheck && npm run lint && npm test && npm run test:mcp && npm run bake
 npm run demo:app                   # the demo product surface
-npm run demo:design-memory:audit   # the showcase harness
+bash scripts/smoke-install.sh      # pack + install + init/sync/audit in a temp dir
+bash scripts/determinism-check.sh  # two audits must be byte-identical
 ```
 
 ## Editing Guidance

@@ -2,10 +2,19 @@
 
 [![CI](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml/badge.svg)](https://github.com/derinbarutcu17/DesignMemory/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@derinb/design-memory)](https://www.npmjs.com/package/@derinb/design-memory)
+[![license](https://img.shields.io/github/license/derinbarutcu17/DesignMemory)](LICENSE)
 
 **The deterministic memory and guardrail layer between your design system and the agents writing your frontend.**
 
 Design Memory sits between your design truth (Figma → `tokens.json` → `DESIGN.md` → Tailwind `@theme`) and the coding agents. It blocks net-new drift before a human ever reviews it, and it gives agents the context they need before they write: tokens, component contracts, and previous decisions, over MCP. Deterministic, local-first, DTCG-native. No telemetry, no cloud, no LLM in the gate.
+
+![Design Memory in motion: an agent edit is caught, repaired with a token, and remembered](docs/graphics/loop.gif)
+
+## Who this is for
+
+Teams shipping UI with coding agents, where more than one person writes frontend code and nobody has time to police every commit by hand. It pays off fastest when a repo already has a token file or a `DESIGN.md`, and it is deliberately small: one config file, one state directory, no service to run.
+
+Not for you if: you want a general frontend linter (use ESLint), you want visual regression (use Argos or Chromatic), or your UI is not React/Tailwind (see [limits](#limits-and-non-goals)).
 
 ## The problem
 
@@ -134,7 +143,7 @@ Every finding names the exact replacement: `Replace p-[9px] with p-3 (token spac
 | GitHub Action | `derinbarutcu17/DesignMemory@main` annotates the PR diff inline | check fails on net-new errors |
 | Agent loop | `design-memory mcp` or `design-memory audit --json` | same codes; MCP returns `wouldBlock` |
 
-Live proof on the older showcase: [PR #1 on the demo repo](https://github.com/derinbarutcu17/design-memory-demo/pull/1).
+Live proof on the demo repo: [PR #1 on design-memory-demo](https://github.com/derinbarutcu17/design-memory-demo/pull/1).
 
 ## The demo app: Northwind Procurement Console
 
@@ -209,15 +218,31 @@ design-memory mcp [--cwd <path>]
 ## Quality gates
 
 ```bash
-npm run typecheck   # tsc --noEmit
+npm run typecheck   # tsc --noEmit for src, scripts, and bake
 npm run lint        # eslint
 npm test            # 52 unit and integration tests
 npm run test:mcp    # 8 MCP protocol, budget, and determinism tests
 npm run bake        # 14 end-to-end scenarios
-npm run gates       # all of the above, plus build
+npm run determinism # two audits of the same change must be byte-identical
+npm run smoke       # pack, install into a clean project, gate it
+npm run gates       # typecheck, lint, build, tests, MCP tests, bake
 ```
 
-CI runs typecheck, build, lint, tests, MCP tests, bake scenarios, and a package smoke test on Node 20 and 22.
+CI runs typecheck, build, lint, tests, MCP tests, bake scenarios, the determinism check, the package smoke install, and a package content guard on Node 20 and 22.
+
+## FAQ
+
+**Is the gate an LLM?** No. Every block comes from regex, AST, and contract checks. The optional LLM layer is disabled by default and can only rewrite suggestions, never decide pass or fail.
+
+**How is this different from a linter?** A linter enforces style per file. Design Memory enforces a design-system contract across a diff, and it remembers: baseline for existing drift, decisions with reasons and expiry, and an MCP surface so agents can fetch the same truth before they write.
+
+**Will it spam our existing repo?** No. Run `audit --create-baseline` once; only net-new or reopened findings block after that.
+
+**Does it work in a monorepo?** Yes. Run the CLI from the package directory; git paths are scoped to that directory automatically.
+
+**What does it add to my repo?** One `design-memory.config.json` and one `.design-memory/` state directory. No service, no cloud, no telemetry.
+
+**Where is the enforcement logic?** `src/lib/audit/detectors.ts` holds the rules; `src/lib/audit/statuses.ts` holds baseline, history, and decision resolution; severities live in `design-memory.config.json`.
 
 ## Limits and non-goals
 
@@ -245,7 +270,7 @@ CI runs typecheck, build, lint, tests, MCP tests, bake scenarios, and a package 
 | `test/` | 52 unit and integration tests on `node:test`; MCP protocol, budget, and determinism suites in `test/mcp/` |
 | `bake/` | 14 end-to-end scenarios: harness, scenario definitions, temp-repo fixtures |
 | `apps/procure-dash/` | The product-shaped demo app with its own `tokens.json`, `DESIGN.md`, baseline, and seeded decisions |
-| `examples/` | `mcp-registration/` client snippets; `design-memory-showcase/` the original 6-act harness |
+| `examples/` | `mcp-registration/` client snippets for Claude, Cursor, OpenCode, and Codex |
 | `scripts/demo/` | `seed-demo-baseline.ts`, `seed-demo-decisions.ts` (demo app setup) |
 | `scripts/graphics/` | `render-graphics.ts` (diagrams), `render-app-shots.ts` (app screenshots) |
 | `scripts/video/` | `render-video.ts` (motion piece recording) |
@@ -261,7 +286,6 @@ CI runs typecheck, build, lint, tests, MCP tests, bake scenarios, and a package 
 npm install
 npm run gates                      # typecheck, lint, build, tests, MCP tests, bake
 npm run demo:app                   # run the demo app in dev mode
-npm run demo:design-memory:audit   # the original 6-act showcase harness
 npm run graphics && npm run shots  # re-render diagrams and app screenshots
 npm run video                      # rebuild and record the motion piece
 ```
