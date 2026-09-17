@@ -71,14 +71,14 @@ node dist/cli/index.js ghost --write  # 4. generate agent rules files
 
 ## Install from GitHub (no npm registry required)
 
-Install straight from the release tag (npm clones and builds it for you):
+One command from the release tarball. npm 12 refuses non-registry fetches by default, so pass `--allow-remote=root` (root source from a URL, transitive dependencies still registry-only):
 
 ```bash
-npm install -g github:derinbarutcu17/DesignMemory#v0.4.0
+npm install -g --allow-remote=root https://github.com/derinbarutcu17/DesignMemory/releases/download/v0.4.0/derinb-design-memory-0.4.0.tgz
 design-memory --version
 ```
 
-Or download `derinb-design-memory-0.4.0.tgz` from the [v0.4.0 release](https://github.com/derinbarutcu17/DesignMemory/releases/tag/v0.4.0) and install the file locally (npm 12 blocks installing directly from a remote tarball URL):
+Or download `derinb-design-memory-0.4.0.tgz` from the [v0.4.0 release](https://github.com/derinbarutcu17/DesignMemory/releases/tag/v0.4.0) and install the local file (no flag needed):
 
 ```bash
 npm install -g ./derinb-design-memory-0.4.0.tgz
