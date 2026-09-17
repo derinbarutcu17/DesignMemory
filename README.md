@@ -71,11 +71,17 @@ node dist/cli/index.js ghost --write  # 4. generate agent rules files
 
 ## Install from GitHub (no npm registry required)
 
-Prebuilt tarball from the v0.4.0 release:
+Install straight from the release tag (npm clones and builds it for you):
 
 ```bash
-npm install -g https://github.com/derinbarutcu17/DesignMemory/releases/download/v0.4.0/derinb-design-memory-0.4.0.tgz
+npm install -g github:derinbarutcu17/DesignMemory#v0.4.0
 design-memory --version
+```
+
+Or download `derinb-design-memory-0.4.0.tgz` from the [v0.4.0 release](https://github.com/derinbarutcu17/DesignMemory/releases/tag/v0.4.0) and install the file locally (npm 12 blocks installing directly from a remote tarball URL):
+
+```bash
+npm install -g ./derinb-design-memory-0.4.0.tgz
 ```
 
 Or clone and build:
@@ -87,7 +93,7 @@ npm install && npm run build
 node dist/cli/index.js --version
 ```
 
-For MCP clients, use either the global `design-memory` binary or `node <repo>/dist/cli/index.js`, both with `mcp --cwd <your project>`. Ready-made configs for Claude, Cursor, OpenCode, and Codex live in [`examples/mcp-registration/`](examples/mcp-registration/README.md).
+For MCP clients, use either the global `design-memory` binary or `node <repo>/dist/cli/index.js`, both with `mcp --cwd <your project>`. Ready-made configs for Claude, Cursor, OpenCode, and Codex live in [`examples/mcp-registration/`](examples/mcp-registration/README.md). Note: the unscoped name `design-memory` on npm belongs to an unrelated package, so always use the scoped `@derinb/design-memory` or a GitHub install path.
 
 
 ## MCP: the agent side of the loop

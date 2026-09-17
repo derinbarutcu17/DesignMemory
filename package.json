@@ -26,6 +26,7 @@
     "shots": "node --import tsx scripts/graphics/render-app-shots.ts",
     "video:build": "esbuild docs/video/motion/src/main.tsx --bundle --outfile=docs/video/motion/bundle.js --format=iife --loader:.tsx=tsx --jsx=automatic --define:process.env.NODE_ENV='\"production\"' --minify",
     "video": "npm run video:build && node --import tsx scripts/video/render-video.ts",
+    "prepare": "npm run build",
     "prepack": "npm run build",
     "smoke": "bash scripts/smoke-install.sh",
     "determinism": "bash scripts/determinism-check.sh"
