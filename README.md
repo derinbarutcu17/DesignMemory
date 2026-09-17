@@ -67,7 +67,28 @@ node dist/cli/index.js audit          # 3. gate your staged changes
 node dist/cli/index.js ghost --write  # 4. generate agent rules files
 ```
 
-`@derinb/design-memory` is not published to npm yet. Use the built CLI from this repo, or `npm link` it. Once published, replace `node dist/cli/index.js` with `npx @derinb/design-memory`.
+`@derinb/design-memory` is not published to npm yet. Until it is, use one of the GitHub install paths below.
+
+## Install from GitHub (no npm registry required)
+
+Prebuilt tarball from the v0.4.0 release:
+
+```bash
+npm install -g https://github.com/derinbarutcu17/DesignMemory/releases/download/v0.4.0/derinb-design-memory-0.4.0.tgz
+design-memory --version
+```
+
+Or clone and build:
+
+```bash
+git clone https://github.com/derinbarutcu17/DesignMemory.git
+cd DesignMemory
+npm install && npm run build
+node dist/cli/index.js --version
+```
+
+For MCP clients, use either the global `design-memory` binary or `node <repo>/dist/cli/index.js`, both with `mcp --cwd <your project>`. Ready-made configs for Claude, Cursor, OpenCode, and Codex live in [`examples/mcp-registration/`](examples/mcp-registration/README.md).
+
 
 ## MCP: the agent side of the loop
 
